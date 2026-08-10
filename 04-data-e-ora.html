@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="it" class="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>ROPE — Data e ora</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+<link href="assets/app.css" rel="stylesheet">
+<style>
+  .passi{display:flex;gap:6px;margin:0 0 24px}
+  .passi span{flex:1;height:3px;border-radius:2px;background:var(--border)}
+  .passi span.on{background:var(--accent)}
+  .passi-txt{font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+             color:var(--text-2);margin-bottom:10px}
+  .scelto{background:var(--surface);border:1px solid var(--border);border-radius:16px;
+          padding:16px;display:flex;align-items:center;justify-content:space-between;
+          gap:14px;margin-bottom:28px}
+  .scelto .n{font-size:15px;font-weight:600}
+  .scelto .m{font-size:12px;color:var(--text-2);margin-top:3px}
+  .scelto .p{font-family:var(--headline);font-weight:700;font-size:19px;color:var(--accent);white-space:nowrap}
+  .mese{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  .mese h2{font-family:var(--headline);font-size:17px;margin:0;font-weight:600;text-transform:capitalize}
+  .mese button{background:none;border:1px solid var(--border);border-radius:50%;color:var(--text);
+               width:44px;height:44px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .mese button:disabled{opacity:.3;cursor:not-allowed}
+  .griglia{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+  .griglia .gg{text-align:center;font-size:11px;color:var(--text-2);padding:6px 0;text-transform:uppercase}
+  .giorno{aspect-ratio:1;border:none;background:none;color:var(--text);border-radius:50%;
+          font-family:var(--body);font-size:15px;cursor:pointer;min-height:44px;
+          display:flex;align-items:center;justify-content:center;transition:background .2s,color .2s}
+  .giorno:hover:not(:disabled){background:var(--surface-2)}
+  .giorno:disabled{color:#3A3A42;cursor:not-allowed}
+  .giorno[aria-pressed="true"]{background:var(--accent);color:var(--bg);font-weight:600}
+  .giorno:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .orari{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .ora{min-height:48px;border-radius:12px;border:1px solid var(--border);background:var(--surface);
+       color:var(--text);font-family:var(--body);font-size:15px;cursor:pointer;transition:background .2s}
+  .ora[aria-pressed="true"]{background:var(--accent);color:var(--bg);border-color:var(--accent);font-weight:600}
+  .ora:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a href="03-dettaglio-servizio.html" aria-label="Indietro"><span class="material-symbols-outlined">arrow_back</span></a>
+  <span class="titolo">Prenota</span>
+  <span style="min-width:44px"></span>
+</header>
+
+<main>
+  <div class="passi-txt">Passo 2 di 4 · Data e ora</div>
+  <div class="passi"><span class="on"></span><span class="on"></span><span></span><span></span></div>
+
+  <div class="scelto" id="scelto"></div>
+
+  <div class="mese">
+    <button id="prec" aria-label="Mese precedente"><span class="material-symbols-outlined">chevron_left</span></button>
+    <h2 id="nome-mese"></h2>
+    <button id="succ" aria-label="Mese successivo"><span class="material-symbols-outlined">chevron_right</span></button>
+  </div>
+  <div class="griglia" id="calendario"></div>
+
+  <div class="sezione">Orari disponibili</div>
+  <div class="orari" id="orari"></div>
+  <p class="spiega" id="riconsegna" style="margin-top:16px"></p>
+</main>
+
+<div class="barra">
+  <div class="totale"><small>Totale</small><b id="tot">—</b></div>
+  <button class="btn primario" id="avanti" disabled>Continua</button>
+</div>
+
+<script src="assets/config.js"></script>
+<script src="assets/app.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+const MESI = ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio',
+              'agosto','settembre','ottobre','novembre','dicembre'];
+const GG = ['lun','mar','mer','gio','ven','sab','dom'];
+const ORARI = ['09:00','10:30','12:00','14:00','15:30','17:00'];
+
+const oggi = new Date(); oggi.setHours(0,0,0,0);
+let vista = new Date(oggi.getFullYear(), oggi.getMonth(), 1);
+let scelta = null, ora = null;
+
+(async function(){
+  try{ await ROPE.carica(); }catch(e){}
+  const s = ROPE.selezione();
+  const t = s.pacchettoId ? ROPE.trovaLivello(s.pacchettoId, s.livelloId) : null;
+
+  if(!t){
+    $("#scelto").innerHTML =
+      '<div><div class="n">Nessun servizio scelto</div>' +
+      '<div class="m">Torna ai servizi per sceglierne uno</div></div>' +
+      '<a class="btn" href="02-servizi.html">Servizi</a>';
+  }else{
+    const tot = ROPE.totale();
+    const nEx = (s.extra||[]).length;
+    $("#scelto").innerHTML =
+      `<div><div class="n">${ROPE.esc(t.livello.titolo || t.livello.nome)}</div>
+        <div class="m">${ROPE.esc(ROPE.tagliaOggetto()?.nome || '')}${nEx ? ' · ' + nEx + ' extra' : ''}</div></div>
+       <div class="p">${tot.testo}</div>`;
+    $("#tot").textContent = tot.testo;
+  }
+
+  disegnaMese(); disegnaOrari();
+})();
+
+function disegnaMese(){
+  $("#nome-mese").textContent = MESI[vista.getMonth()] + ' ' + vista.getFullYear();
+  $("#prec").disabled = vista.getFullYear() === oggi.getFullYear() && vista.getMonth() === oggi.getMonth();
+
+  const c = $("#calendario"); c.innerHTML = "";
+  GG.forEach(g => c.insertAdjacentHTML('beforeend', `<div class="gg">${g}</div>`));
+
+  const primo = new Date(vista.getFullYear(), vista.getMonth(), 1);
+  const spazi = (primo.getDay() + 6) % 7;              // settimana che parte da lunedì
+  for(let i=0;i<spazi;i++) c.insertAdjacentHTML('beforeend', '<div></div>');
+
+  const giorni = new Date(vista.getFullYear(), vista.getMonth()+1, 0).getDate();
+  for(let g=1; g<=giorni; g++){
+    const data = new Date(vista.getFullYear(), vista.getMonth(), g);
+    const b = document.createElement('button');
+    b.className = 'giorno'; b.type = 'button'; b.textContent = g;
+    const domenica = data.getDay() === 0;
+    b.disabled = data < oggi || domenica;
+    b.setAttribute('aria-pressed', !!(scelta && data.getTime() === scelta.getTime()));
+    if(domenica) b.title = 'Chiuso';
+    b.addEventListener('click', () => { scelta = data; disegnaMese(); controlla(); });
+    c.appendChild(b);
+  }
+}
+
+function disegnaOrari(){
+  const c = $("#orari"); c.innerHTML = "";
+  ORARI.forEach(o => {
+    const b = document.createElement('button');
+    b.className = 'ora'; b.type = 'button'; b.textContent = o;
+    b.setAttribute('aria-pressed', o === ora);
+    b.addEventListener('click', () => { ora = o; disegnaOrari(); controlla(); });
+    c.appendChild(b);
+  });
+}
+
+function controlla(){
+  const pronto = !!(scelta && ora);
+  $("#avanti").disabled = !pronto;
+  if(pronto){
+    const s = ROPE.selezione();
+    const t = s.pacchettoId ? ROPE.trovaLivello(s.pacchettoId, s.livelloId) : null;
+    const durata = t && t.livello.durata ? ' · durata stimata ' + t.livello.durata : '';
+    $("#riconsegna").textContent =
+      `Appuntamento ${scelta.getDate()} ${MESI[scelta.getMonth()]} alle ${ora}${durata}`;
+  }
+}
+
+$("#prec").addEventListener('click', () => {
+  vista = new Date(vista.getFullYear(), vista.getMonth()-1, 1); disegnaMese();
+});
+$("#succ").addEventListener('click', () => {
+  vista = new Date(vista.getFullYear(), vista.getMonth()+1, 1); disegnaMese();
+});
+$("#avanti").addEventListener('click', () => {
+  ROPE.aggiorna({
+    data: `${scelta.getDate()} ${MESI[scelta.getMonth()]} ${scelta.getFullYear()}`,
+    dataISO: scelta.toISOString().slice(0,10),
+    ora
+  });
+  location.href = '05-la-tua-auto.html';
+});
+</script>
+</body>
+</html>

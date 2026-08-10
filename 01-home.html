@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="it" class="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>ROPE Car Detailing — Home</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+<link href="assets/app.css" rel="stylesheet">
+<style>
+  .saluto{font-family:var(--headline);font-size:28px;font-weight:700;margin:0}
+  .saluto + p{color:var(--text-2);font-size:14px;margin:4px 0 24px}
+  .promo{background:var(--accent);color:var(--bg);border-radius:16px;padding:14px 18px;
+         display:flex;align-items:center;gap:12px;margin-bottom:24px;
+         font-family:var(--headline);font-weight:600;font-size:14px;letter-spacing:.02em}
+  .appunt{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:20px}
+  .appunt .riga{display:flex;align-items:center;gap:10px;color:var(--text-2);font-size:14px;margin-top:8px}
+  .appunt .riga .material-symbols-outlined{font-size:18px}
+  .appunt h3{font-family:var(--headline);font-size:19px;margin:0;font-weight:600}
+  .scorri{display:flex;gap:12px;overflow-x:auto;padding-bottom:8px;
+          scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
+  .scorri::-webkit-scrollbar{display:none}
+  .mini{flex:0 0 240px;scroll-snap-align:start;background:var(--surface);
+        border:1px solid var(--border);border-radius:18px;padding:18px;
+        cursor:pointer;text-align:left;color:inherit;font:inherit;transition:border-color .2s}
+  .mini:hover{border-color:var(--accent)}
+  .mini .pk{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-2)}
+  .mini h4{font-family:var(--headline);font-size:16px;margin:6px 0 0;font-weight:600;line-height:1.3}
+  .mini .pz{font-family:var(--headline);font-weight:700;font-size:20px;color:var(--accent);margin-top:14px}
+  .mini .pz span{font-family:var(--body);font-size:11px;font-weight:400;color:var(--text-2)}
+  .lavoro{flex:0 0 200px;scroll-snap-align:start;border-radius:18px;overflow:hidden;
+          position:relative;aspect-ratio:4/5;background:var(--surface-2);border:1px solid var(--border)}
+  .lavoro img{width:100%;height:100%;object-fit:cover}
+  .lavoro .cap{position:absolute;left:0;right:0;bottom:0;padding:14px;
+               background:linear-gradient(transparent,rgba(10,10,11,.92));font-size:13px;font-weight:600}
+  .lavoro .bd{position:absolute;top:10px;left:10px;background:rgba(10,10,11,.8);
+              border:1px solid var(--border);border-radius:99px;padding:3px 9px;
+              font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <img class="logo" src="assets/rope-logo.png" alt="ROPE Car Detailing">
+  <div style="display:flex;gap:4px">
+    <button aria-label="Notifiche"><span class="material-symbols-outlined">notifications</span></button>
+    <a href="09-profilo.html" aria-label="Profilo"><span class="material-symbols-outlined">account_circle</span></a>
+  </div>
+</header>
+
+<main>
+  <h2 class="saluto">Ciao</h2>
+  <p>Il tuo prossimo appuntamento</p>
+
+  <div id="promo"></div>
+
+  <div class="appunt">
+    <h3 id="app-titolo">Nessun appuntamento</h3>
+    <div class="riga"><span class="material-symbols-outlined">event</span>
+      <span id="app-quando">Prenota il tuo primo trattamento</span></div>
+    <a class="btn primario pieno" href="02-servizi.html" style="margin-top:18px">Prenota un servizio</a>
+  </div>
+
+  <div class="sezione" style="display:flex;justify-content:space-between;align-items:center">
+    <span>Servizi</span>
+    <a href="02-servizi.html" style="color:var(--text-2);text-decoration:none;font-family:var(--body);
+       font-size:12px;letter-spacing:0;text-transform:none">Vedi tutti</a>
+  </div>
+  <div class="scorri" id="servizi"></div>
+
+  <div class="sezione">I nostri lavori</div>
+  <div class="scorri" id="lavori"></div>
+</main>
+
+<nav class="tab">
+  <a href="01-home.html" class="attivo"><span class="material-symbols-outlined">home</span>Home</a>
+  <a href="02-servizi.html"><span class="material-symbols-outlined">list</span>Servizi</a>
+  <a href="04-data-e-ora.html"><span class="material-symbols-outlined">calendar_month</span>Prenotazioni</a>
+  <a href="09-profilo.html"><span class="material-symbols-outlined">person</span>Profilo</a>
+</nav>
+
+<script src="assets/config.js"></script>
+<script src="assets/app.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+
+(async function(){
+  let d;
+  try{ d = await ROPE.carica(); }
+  catch(e){ $("#servizi").innerHTML = '<p class="vuoto">Servizi non disponibili.</p>'; return; }
+
+  /* promozione */
+  if(d.promo && d.promo.attiva && d.promo.testo){
+    $("#promo").innerHTML =
+      `<div class="promo"><span class="material-symbols-outlined">local_offer</span>
+       ${ROPE.esc(d.promo.testo)}</div>`;
+  }
+
+  /* prossimo appuntamento (per ora dalla prenotazione in corso) */
+  const s = ROPE.selezione();
+  if(s.pacchettoId && s.livelloId && s.data){
+    const t = ROPE.trovaLivello(s.pacchettoId, s.livelloId);
+    if(t){
+      $("#app-titolo").textContent = t.livello.titolo || t.livello.nome;
+      $("#app-quando").textContent = s.data + (s.ora ? ' · ' + s.ora : '');
+    }
+  }
+
+  /* carosello servizi: tutti i livelli attivi */
+  const cont = $("#servizi"); cont.innerHTML = "";
+  d.pacchetti.filter(p => p.attivo !== false).forEach(p => {
+    (p.livelli||[]).filter(l => l.attivo !== false).forEach(l => {
+      const b = document.createElement('button');
+      b.className = 'mini'; b.type = 'button';
+      const testo = ROPE.testoPrezzo(l);
+      b.innerHTML = `<div class="pk">${ROPE.esc(p.nome)}</div>
+        <h4>${ROPE.esc(l.titolo || l.nome)}</h4>
+        <div class="pz">${testo === 'Su richiesta' ? '' : '<span>da </span>'}${testo}</div>`;
+      b.addEventListener('click', () => {
+        location.href = `03-dettaglio-servizio.html?p=${encodeURIComponent(p.id)}&l=${encodeURIComponent(l.id)}`;
+      });
+      cont.appendChild(b);
+    });
+  });
+
+  /* galleria */
+  const g = $("#lavori");
+  if(!d.galleria.length){
+    g.innerHTML = '<p class="vuoto" style="padding:24px 0;font-size:14px">' +
+                  'Nessun lavoro pubblicato ancora.</p>';
+  }else{
+    d.galleria.forEach(l => {
+      const div = document.createElement('div');
+      div.className = 'lavoro';
+      div.innerHTML = `${l.dopo ? `<img src="${ROPE.esc(l.dopo)}" alt="${ROPE.esc(l.auto||'Lavoro')}">` : ''}
+        <span class="bd">Prima / Dopo</span>
+        <div class="cap">${ROPE.esc(l.auto || '')}<br>
+          <span style="font-weight:400;color:var(--text-2)">${ROPE.esc(l.servizio||'')}</span></div>`;
+      g.appendChild(div);
+    });
+  }
+})();
+</script>
+</body>
+</html>

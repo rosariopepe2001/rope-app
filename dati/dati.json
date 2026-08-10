@@ -1,0 +1,160 @@
+{
+  "azienda": {
+    "nome": "ROPE Car Detailing",
+    "indirizzo": "Località Calabri, 18 Caggiano ",
+    "telefono": "327 7494672",
+    "whatsapp": "+39 3277494672",
+    "orari": "Lun-Sab 8:30 - 18:30"
+  },
+  "promo": {
+    "attiva": false,
+    "testo": ""
+  },
+  "taglie": [
+    {
+      "id": "s",
+      "nome": "Small",
+      "etichetta": "Microcar",
+      "descrizione": "Auto super compatte per la città",
+      "esempi": "Fiat 500, Panda, Smart, Aygo, Twingo"
+    },
+    {
+      "id": "m",
+      "nome": "Medium",
+      "etichetta": "Berline Compatte",
+      "descrizione": "Auto segmento medio, 3/5 porte",
+      "esempi": "VW Golf, Audi A3, Classe A, BMW Serie 1"
+    },
+    {
+      "id": "l",
+      "nome": "Large",
+      "etichetta": "Berline Grandi",
+      "descrizione": "Auto familiari, berline e SUV compatti",
+      "esempi": "Formentor, Audi Q3, Audi A4, BMW X1, X2, X3"
+    },
+    {
+      "id": "xl",
+      "nome": "X Large",
+      "etichetta": "Grandi SUV",
+      "descrizione": "I \"giganti\" della strada",
+      "esempi": "Ford Ranger, Audi Q8, BMW X5, Mercedes GLE"
+    }
+  ],
+  "pacchetti": [
+    {
+      "id": "p-interno",
+      "nome": "Detailing Interno",
+      "sottotitolo": "La cura dell’abitacolo",
+      "foto": "",
+      "nota": "",
+      "attivo": true,
+      "livelli": [
+        {
+          "id": "interno-base",
+          "nome": "Base",
+          "titolo": "Pulizia Interni",
+          "descrizione": "Un trattamento completo pensato per rinfrescare e valorizzare l’abitacolo della tua auto.\n\nIl servizio comprende l’aspirazione approfondita degli interni e del bagagliaio, insieme alla pulizia delle principali superfici accessibili, per eliminare polvere e sporco e restituire all’ambiente un aspetto ordinato e curato.\n\nLa soluzione ideale per chi desidera interni puliti e impeccabili, con un servizio rapido ed efficace.",
+          "durata": "",
+          "prezzi": { "s": 60, "m": 70, "l": 80, "xl": 90 },
+          "evidenza": false,
+          "attivo": true
+        },
+        {
+          "id": "interno-premium",
+          "nome": "Premium",
+          "titolo": "Pulizia Profonda Interni",
+          "descrizione": "Un trattamento completo dedicato alla cura approfondita dell’abitacolo.\n\nOgni zona viene pulita con particolare attenzione, intervenendo anche negli spazi più nascosti e difficili da raggiungere, per ottenere un risultato preciso e curato in ogni dettaglio.\n\nIl servizio comprende inoltre l’applicazione di un protettivo specifico su plastiche e cruscotto, studiato per contrastare gli effetti dei raggi UV e preservare le superfici nel tempo, lasciando una piacevole finitura satinata e un aspetto rinnovato.",
+          "durata": "",
+          "prezzi": { "s": 90, "m": 120, "l": 150, "xl": 180 },
+          "evidenza": false,
+          "attivo": true
+        }
+      ],
+      "extra": [
+        { "id": "x-sedili-pelle",   "nome": "Trattamento sedili in pelle", "prezzi": { "s": 10, "m": 20, "l": 30, "xl": 40 }, "attivo": true },
+        { "id": "x-sedili-tessuto", "nome": "Lavaggio sedili in tessuto",  "prezzi": { "s": 30, "m": 40, "l": 50, "xl": 60 }, "attivo": true },
+        { "id": "x-cielo",          "nome": "Pulizia cielo abitacolo",     "prezzi": { "s": 10, "m": 20, "l": 30, "xl": 40 }, "attivo": true },
+        { "id": "x-peli",           "nome": "Rimozione peli animali",      "prezzi": { "s": 20, "m": 30, "l": 40, "xl": 50 }, "attivo": true }
+      ]
+    },
+    {
+      "id": "p-interno-esterno",
+      "nome": "Detailing Interno + Esterno",
+      "sottotitolo": "Dentro e fuori, lavaggio a mano",
+      "foto": "",
+      "nota": "",
+      "attivo": true,
+      "livelli": [
+        {
+          "id": "completo-base",
+          "nome": "Base",
+          "titolo": "Interno + Esterno Base",
+          "descrizione": "Non il classico lavaggio auto, ma un trattamento pensato per prendersi cura della carrozzeria in modo sicuro.\n\nOltre alla pulizia dell’abitacolo prevista dal pacchetto Interno Base, l’esterno viene lavato interamente a mano con la tecnica professionale dei due secchi, che permette di ridurre al minimo il rischio di trascinare sporco e impurità sulla vernice.\n\nA differenza dei lavaggi automatici o di metodi poco accurati, questa procedura aiuta a prevenire la comparsa di micrograffi e swirls, preservando nel tempo la qualità e la brillantezza della carrozzeria.\n\nLa scelta ideale per chi desidera un’auto pulita dentro e fuori, con la giusta attenzione per ogni superficie.",
+          "durata": "",
+          "prezzi": { "s": 100, "m": 120, "l": 140, "xl": 160 },
+          "evidenza": false,
+          "attivo": true
+        },
+        {
+          "id": "completo-premium",
+          "nome": "Premium",
+          "titolo": "Interno + Esterno Premium",
+          "descrizione": "Un trattamento completo per chi desidera il massimo della cura, della brillantezza e della protezione.\n\nOltre ai servizi previsti dal pacchetto Interno Premium e al lavaggio esterno eseguito a mano, la carrozzeria e i cerchi vengono sottoposti a un accurato processo di decontaminazione chimica e meccanica, studiato per rimuovere le impurità più tenaci e restituire alle superfici una finitura liscia e pulita.\n\nA completare il trattamento viene applicato un sigillante professionale sulla carrozzeria e sul parabrezza, creando una barriera protettiva contro acqua e agenti atmosferici.\n\nIl risultato? Una brillantezza intensa e profonda, un marcato effetto idrorepellente e superfici protette più a lungo.\n\nLa soluzione ideale per chi vuole regalare alla propria auto un aspetto impeccabile dentro e fuori.",
+          "durata": "",
+          "prezzi": { "s": 150, "m": 200, "l": 250, "xl": 300 },
+          "evidenza": true,
+          "attivo": true
+        }
+      ],
+      "extra": [
+        { "id": "x-vano-motore", "nome": "Pulizia vano motore", "prezzi": { "s": 40,  "m": 45,  "l": 50,  "xl": 55  }, "attivo": true },
+        { "id": "x-fari",        "nome": "Ripristino fari",     "prezzi": { "s": 120, "m": 120, "l": 120, "xl": 120 }, "attivo": true },
+        { "id": "x-lucidatura",  "nome": "Lucidatura",          "prezzi": { "s": 250, "m": 300, "l": 350, "xl": 400 }, "attivo": true }
+      ]
+    },
+    {
+      "id": "p-esperienze",
+      "nome": "Esperienze ROPE",
+      "sottotitolo": "Servizio esclusivo a domicilio",
+      "foto": "",
+      "nota": "Servizio a domicilio",
+      "attivo": true,
+      "livelli": [
+        {
+          "id": "showroom",
+          "nome": "Showroom",
+          "titolo": "Trattamento Showroom",
+          "descrizione": "Un servizio esclusivo a domicilio dedicato a chi desidera riportare la propria auto al massimo del suo potenziale estetico, dentro e fuori.\n\nL’abitacolo viene sottoposto a un trattamento completo e approfondito, con pulizia tecnica di ogni dettaglio, estrazione dello sporco dai tessuti e trattamenti specifici per nutrire e proteggere pelle, plastiche e superfici interne.\n\nAll’esterno, dopo un’accurata decontaminazione della carrozzeria, viene eseguita una lucidatura mirata per correggere micrograffi, swirls e opacità, esaltando nuovamente profondità, riflesso e brillantezza della vernice.\n\nIl trattamento si conclude con l’applicazione di una protezione nanotecnologica idrofobica su carrozzeria e parabrezza, studiata per preservare più a lungo il risultato ottenuto e facilitare la manutenzione dell’auto.\n\nIl risultato è una vettura completamente valorizzata, con interni rigenerati e una carrozzeria brillante e profonda, per un autentico effetto showroom.",
+          "durata": "",
+          "prezzi": { "s": 400, "m": 500, "l": 600, "xl": 700 },
+          "evidenza": false,
+          "attivo": true
+        }
+      ],
+      "extra": []
+    },
+    {
+      "id": "p-mantenimento",
+      "nome": "Mantenimento",
+      "sottotitolo": "Riservato ai clienti Premium",
+      "foto": "",
+      "nota": "Riservato a chi ha già effettuato almeno un trattamento Premium. Consigliato ogni 30-40 giorni dal trattamento precedente.",
+      "attivo": true,
+      "livelli": [
+        {
+          "id": "mantenimento",
+          "nome": "Mantenimento",
+          "titolo": "Programma Mantenimento",
+          "descrizione": "Un servizio riservato a chi vuole mantenere nel tempo il livello di cura, brillantezza e protezione raggiunto con i nostri trattamenti Premium.\n\nIl programma è dedicato esclusivamente ai clienti che hanno già effettuato almeno un servizio Premium e prevede interventi periodici studiati per preservare al meglio le condizioni della vettura.\n\nPer garantire un mantenimento ottimale, consigliamo di programmare ogni intervento entro 30-40 giorni dal trattamento precedente.\n\nDurante ogni appuntamento vengono ripristinati brillantezza e pulizia, ravvivati i protettivi applicati e rimossi i contaminanti prima che possano accumularsi sulle superfici.\n\nUna cura costante che permette di conservare più a lungo l’effetto showroom e avere un’auto sempre impeccabile, protetta e piacevole da vivere.",
+          "durata": "",
+          "prezzi": { "s": null, "m": null, "l": null, "xl": null },
+          "suRichiesta": true,
+          "evidenza": false,
+          "attivo": true
+        }
+      ],
+      "extra": []
+    }
+  ],
+  "galleria": []
+}

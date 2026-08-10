@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="it" class="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>ROPE — Riepilogo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+<link href="assets/app.css" rel="stylesheet">
+<style>
+  .passi{display:flex;gap:6px;margin:0 0 24px}
+  .passi span{flex:1;height:3px;border-radius:2px;background:var(--border)}
+  .passi span.on{background:var(--accent)}
+  .passi-txt{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-2);margin-bottom:10px}
+  .voce{display:flex;justify-content:space-between;gap:16px;padding:14px 0;
+        border-bottom:1px solid var(--border)}
+  .voce:last-child{border-bottom:none}
+  .voce .e{font-size:12px;color:var(--text-2);letter-spacing:.08em;text-transform:uppercase}
+  .voce .v{font-size:15px;margin-top:3px}
+  .conto{display:flex;justify-content:space-between;gap:16px;padding:10px 0;font-size:15px}
+  .conto .c{color:var(--text-2)}
+  .totale-riga{display:flex;justify-content:space-between;align-items:baseline;gap:16px;
+               margin-top:14px;padding-top:16px;border-top:1px solid var(--border)}
+  .totale-riga .t{font-family:var(--headline);font-size:13px;letter-spacing:.12em;text-transform:uppercase}
+  .totale-riga .n{font-family:var(--headline);font-size:32px;font-weight:700;color:var(--accent)}
+  .pagamento{display:flex;align-items:center;gap:14px;background:var(--surface);
+             border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:8px;cursor:pointer}
+  .pagamento.scelto{border-color:var(--accent)}
+  .pallino{width:22px;height:22px;border-radius:50%;border:1px solid var(--border);flex:0 0 auto;
+           display:flex;align-items:center;justify-content:center}
+  .pagamento.scelto .pallino{border-color:var(--accent)}
+  .pagamento.scelto .pallino::after{content:"";width:12px;height:12px;border-radius:50%;background:var(--accent)}
+  .pagamento input{position:absolute;opacity:0;width:0;height:0}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a href="05-la-tua-auto.html" aria-label="Indietro"><span class="material-symbols-outlined">arrow_back</span></a>
+  <span class="titolo">Riepilogo</span>
+  <span style="min-width:44px"></span>
+</header>
+
+<main>
+  <div class="passi-txt">Passo 4 di 4 · Riepilogo</div>
+  <div class="passi"><span class="on"></span><span class="on"></span><span class="on"></span><span class="on"></span></div>
+
+  <div class="carta" id="dettagli"></div>
+
+  <div class="sezione">Il conto</div>
+  <div class="carta" id="conto"></div>
+
+  <div class="sezione">Come vuoi pagare</div>
+  <div id="pagamenti"></div>
+</main>
+
+<div class="barra">
+  <div class="totale"><small>Totale</small><b id="tot">—</b></div>
+  <button class="btn primario" id="conferma">Conferma</button>
+</div>
+
+<script src="assets/config.js"></script>
+<script src="assets/app.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+let pagamento = 'sede';
+
+(async function(){
+  let d;
+  try{ d = await ROPE.carica(); }catch(e){ return; }
+  const s = ROPE.selezione();
+  const t = s.pacchettoId ? ROPE.trovaLivello(s.pacchettoId, s.livelloId) : null;
+
+  if(!t){
+    document.querySelector('main').innerHTML =
+      '<p class="vuoto">Nessuna prenotazione in corso.<br>' +
+      '<a class="btn" href="02-servizi.html" style="margin-top:16px">Vedi i servizi</a></p>';
+    document.querySelector('.barra').hidden = true;
+    return;
+  }
+
+  const a = s.auto || {};
+  const auto = [a.marca, a.modello].filter(Boolean).join(' ') || 'Non indicata';
+  $("#dettagli").innerHTML = `
+    <div class="voce"><div><div class="e">Servizio</div>
+      <div class="v">${ROPE.esc(t.livello.titolo || t.livello.nome)}</div></div>
+      <div style="text-align:right"><div class="e">Pacchetto</div>
+      <div class="v">${ROPE.esc(t.pacchetto.nome)}</div></div></div>
+    <div class="voce"><div><div class="e">Data e ora</div>
+      <div class="v">${ROPE.esc(s.data || 'Da scegliere')}${s.ora ? ' · ' + ROPE.esc(s.ora) : ''}</div></div></div>
+    <div class="voce"><div><div class="e">Auto</div>
+      <div class="v">${ROPE.esc(auto)}${a.targa ? ' · ' + ROPE.esc(a.targa) : ''}</div></div>
+      <div style="text-align:right"><div class="e">Taglia</div>
+      <div class="v">${ROPE.esc(ROPE.tagliaOggetto()?.nome || '')}</div></div></div>
+    ${d.azienda && d.azienda.indirizzo ? `<div class="voce"><div><div class="e">Dove</div>
+      <div class="v">${ROPE.esc(d.azienda.indirizzo)}</div></div></div>` : ''}
+    ${s.note ? `<div class="voce"><div><div class="e">Note</div>
+      <div class="v">${ROPE.esc(s.note)}</div></div></div>` : ''}`;
+
+  /* conto */
+  const righe = [];
+  const pl = ROPE.prezzoDi(t.livello);
+  righe.push({n: t.livello.titolo || t.livello.nome,
+              p: (pl === 'richiesta' || pl === null) ? 'Su richiesta' : ROPE.euro(pl)});
+  (s.extra||[]).forEach(e => {
+    const x = ROPE.trovaExtra(e.pacchettoId || s.pacchettoId, e.id);
+    if(x){
+      const p = ROPE.prezzoDi(x);
+      righe.push({n: x.nome, p: (p === 'richiesta' || p === null) ? 'Su richiesta' : ROPE.euro(p)});
+    }
+  });
+  const tot = ROPE.totale();
+  $("#conto").innerHTML =
+    righe.map(r => `<div class="conto"><span class="c">${ROPE.esc(r.n)}</span><span>${r.p}</span></div>`).join('') +
+    `<div class="totale-riga"><span class="t">Totale</span><span class="n">${tot.testo}</span></div>` +
+    (tot.suRichiesta ? '<div class="nota"><span class="material-symbols-outlined">info</span>' +
+      '<span>Ti ricontattiamo per confermare il preventivo.</span></div>' : '');
+  $("#tot").textContent = tot.testo;
+
+  disegnaPagamenti();
+})();
+
+function disegnaPagamenti(){
+  const opzioni = [{id:'sede', n:'Paga in sede'}, {id:'carta', n:'Carta di credito'}];
+  const c = $("#pagamenti"); c.innerHTML = "";
+  opzioni.forEach(o => {
+    const l = document.createElement('label');
+    l.className = 'pagamento' + (o.id === pagamento ? ' scelto' : '');
+    l.innerHTML = `<span class="pallino"></span>
+      <input type="radio" name="pag" ${o.id === pagamento ? 'checked' : ''}>
+      <span>${o.n}</span>`;
+    l.querySelector('input').addEventListener('change', () => { pagamento = o.id; disegnaPagamenti(); });
+    c.appendChild(l);
+  });
+}
+
+$("#conferma").addEventListener('click', async () => {
+  const btn = $("#conferma");
+  btn.disabled = true; btn.textContent = 'Invio…';
+
+  const codice = '#RP-' + Math.floor(1000 + Math.random()*9000);
+  const s = ROPE.aggiorna({pagamento, codice});
+  const t = ROPE.trovaLivello(s.pacchettoId, s.livelloId);
+
+  let inviata = false;
+  try{
+    const esito = await ROPE.inviaPrenotazione(s);
+    inviata = esito.inviata;
+  }catch(err){
+    btn.disabled = false; btn.textContent = 'Conferma';
+    const box = document.createElement('div');
+    box.className = 'nota';
+    box.style.color = '#E8807A';
+    box.innerHTML = '<span class="material-symbols-outlined">error</span>' +
+      '<span>Non siamo riusciti a inviare la prenotazione. Controlla la connessione e riprova.</span>';
+    $("#pagamenti").after(box);
+    return;
+  }
+
+  ROPE.aggiungiAStorico({
+    codice, data:s.data, dataISO:s.dataISO, ora:s.ora, auto:s.auto, taglia:s.taglia,
+    cliente:s.cliente,
+    servizio: t ? (t.livello.titolo || t.livello.nome) : '',
+    pacchetto: t ? t.pacchetto.nome : '',
+    totale: ROPE.totale(s).testo,
+    stato: inviata ? 'Inviata' : 'Solo su questo telefono'
+  });
+  ROPE.aggiorna({inviata});
+  location.href = '07-conferma.html';
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="it" class="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Dettaglio servizio — ROPE Car Detailing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+<link href="assets/app.css" rel="stylesheet">
+<style>
+  .pk{font-family:var(--headline);font-size:11px;letter-spacing:.18em;
+      text-transform:uppercase;color:var(--text-2);font-weight:600}
+  h1.nome{font-family:var(--headline);font-size:26px;font-weight:700;margin:8px 0 0;line-height:1.25}
+  .livello{display:inline-block;margin-top:10px;font-family:var(--headline);font-size:11px;
+           letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:600;
+           border:1px solid var(--border);border-radius:99px;padding:5px 12px}
+  .testo{color:var(--text-2);font-size:15px;line-height:1.65;white-space:pre-line;margin:20px 0 0}
+  .durata{display:inline-flex;align-items:center;gap:6px;margin-top:16px;font-size:14px;color:var(--text-2)}
+  .durata .material-symbols-outlined{font-size:18px}
+  .extra{display:flex;align-items:center;gap:14px;background:var(--surface);
+         border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:8px;
+         cursor:pointer;transition:border-color .2s}
+  .extra:hover{border-color:var(--accent)}
+  .extra.scelto{border-color:var(--accent)}
+  .extra .n{flex:1;font-size:15px}
+  .extra .p{font-family:var(--headline);font-weight:700;font-size:16px;color:var(--accent);white-space:nowrap}
+  .quadro{width:26px;height:26px;border-radius:8px;border:1px solid var(--border);
+          background:var(--surface-2);flex:0 0 auto;display:flex;align-items:center;justify-content:center;
+          transition:background .2s,border-color .2s}
+  .quadro .material-symbols-outlined{font-size:18px;color:var(--bg);opacity:0}
+  .extra.scelto .quadro{background:var(--accent);border-color:var(--accent)}
+  .extra.scelto .quadro .material-symbols-outlined{opacity:1}
+  .extra input{position:absolute;opacity:0;width:0;height:0}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a href="02-servizi.html" aria-label="Torna ai servizi"><span class="material-symbols-outlined">arrow_back</span></a>
+  <span class="titolo">Servizio</span>
+  <span style="min-width:44px"></span>
+</header>
+
+<main>
+  <div id="contenuto"><p class="vuoto">Carico…</p></div>
+</main>
+
+<div class="barra" id="barra" hidden>
+  <div class="totale">
+    <small id="et-totale">Totale</small>
+    <b id="tot">—</b>
+  </div>
+  <button class="btn primario" id="prenota">Prenota</button>
+</div>
+
+<script src="assets/config.js"></script>
+<script src="assets/app.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+let pacchetto = null, livello = null;
+
+(async function(){
+  let d;
+  try{ d = await ROPE.carica(); }
+  catch(e){ $("#contenuto").innerHTML = '<p class="vuoto">Servizio non disponibile.</p>'; return; }
+
+  const par = new URLSearchParams(location.search);
+  const sel = ROPE.selezione();
+  const pid = par.get('p') || sel.pacchettoId;
+  const lid = par.get('l') || sel.livelloId;
+  const t = pid && lid ? ROPE.trovaLivello(pid, lid) : null;
+
+  if(!t){
+    $("#contenuto").innerHTML =
+      '<p class="vuoto">Servizio non trovato.<br><a class="btn" href="02-servizi.html" style="margin-top:16px">Vedi i servizi</a></p>';
+    return;
+  }
+  pacchetto = t.pacchetto; livello = t.livello;
+
+  /* la selezione riparte da questo servizio */
+  ROPE.aggiorna({pacchettoId:pacchetto.id, livelloId:livello.id,
+                 taglia:ROPE.taglia(), extra:(ROPE.selezione().extra||[])
+                   .filter(e => e.pacchettoId === pacchetto.id)});
+
+  disegna();
+})();
+
+function disegna(){
+  const sel = ROPE.selezione();
+  const scelti = (sel.extra||[]).map(e => e.id);
+
+  $("#contenuto").innerHTML = `
+    <div class="pk">${ROPE.esc(pacchetto.nome)}</div>
+    <h1 class="nome">${ROPE.esc(livello.titolo || livello.nome)}</h1>
+    ${livello.nome ? `<span class="livello">${ROPE.esc(livello.nome)}</span>` : ''}
+    ${pacchetto.nota ? `<div class="nota"><span class="material-symbols-outlined">info</span>
+       <span>${ROPE.esc(pacchetto.nota)}</span></div>` : ''}
+    ${livello.durata ? `<div class="durata">
+       <span class="material-symbols-outlined">schedule</span>${ROPE.esc(livello.durata)}</div>` : ''}
+    ${livello.descrizione ? `<p class="testo">${ROPE.esc(livello.descrizione)}</p>` : ''}
+
+    <div class="selettore" style="margin-top:28px">
+      <div class="tit">La tua auto</div>
+      <div class="chips" id="chips" role="group" aria-label="Taglia dell'auto"></div>
+      <p class="spiega" id="spiega"></p>
+    </div>
+
+    <div id="zona-extra"></div>`;
+
+  ROPE.disegnaChipsTaglia('#chips', () => disegna());
+  $("#spiega").innerHTML = ROPE.testoSpiegaTaglia();
+
+  const extra = (pacchetto.extra||[]).filter(x => x.attivo !== false);
+  if(extra.length){
+    const z = $("#zona-extra");
+    z.innerHTML = '<div class="sezione">Vuoi aggiungere qualcosa?</div>';
+    extra.forEach(x => {
+      const attivo = scelti.includes(x.id);
+      const l = document.createElement('label');
+      l.className = 'extra' + (attivo ? ' scelto' : '');
+      l.innerHTML = `<span class="quadro"><span class="material-symbols-outlined">check</span></span>
+        <input type="checkbox" ${attivo ? 'checked' : ''}>
+        <span class="n">${ROPE.esc(x.nome)}</span>
+        <span class="p">${ROPE.testoPrezzo(x)}</span>`;
+      l.querySelector('input').addEventListener('change', e => {
+        const s = ROPE.selezione(); s.extra = s.extra || [];
+        if(e.target.checked) s.extra.push({id:x.id, pacchettoId:pacchetto.id});
+        else s.extra = s.extra.filter(i => i.id !== x.id);
+        ROPE.salvaSelezione(s); disegna();
+      });
+      z.appendChild(l);
+    });
+  }
+
+  const tot = ROPE.totale();
+  $("#tot").textContent = tot.testo;
+  $("#et-totale").textContent = 'Totale · ' + (ROPE.tagliaOggetto()?.nome || '');
+  $("#barra").hidden = false;
+}
+
+$("#prenota").addEventListener('click', () => location.href = '04-data-e-ora.html');
+</script>
+</body>
+</html>

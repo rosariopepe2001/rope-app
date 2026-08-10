@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="it" class="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>ROPE Car Detailing — Profilo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+<link href="assets/app.css" rel="stylesheet">
+<style>
+  .testa{display:flex;align-items:center;gap:16px;margin-bottom:24px}
+  .avatar{width:64px;height:64px;border-radius:50%;background:var(--surface-2);
+          border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .avatar .material-symbols-outlined{font-size:32px;color:var(--text-2)}
+  .testa h1{font-family:var(--headline);font-size:22px;margin:0;font-weight:700}
+  .testa p{color:var(--text-2);font-size:13px;margin:2px 0 0}
+
+  .fedelta{background:linear-gradient(135deg,var(--surface) 0%,var(--surface-2) 100%);
+           border:1px solid var(--border);border-radius:20px;padding:20px;margin-bottom:8px}
+  .fedelta .e{font-family:var(--headline);font-size:11px;letter-spacing:.18em;
+              text-transform:uppercase;color:var(--text-2);font-weight:600}
+  .fedelta .n{font-family:var(--headline);font-size:17px;margin-top:6px;font-weight:600}
+  .barra-p{height:6px;border-radius:3px;background:var(--bg);margin-top:14px;overflow:hidden}
+  .barra-p i{display:block;height:100%;background:var(--accent);border-radius:3px}
+  .fedelta small{display:block;color:var(--text-2);font-size:12px;margin-top:8px}
+
+  .auto{display:flex;gap:12px;overflow-x:auto;padding-bottom:6px}
+  .auto::-webkit-scrollbar{display:none}
+  .auto .a{flex:0 0 190px;background:var(--surface);border:1px solid var(--border);
+           border-radius:16px;padding:16px}
+  .auto .a .m{font-family:var(--headline);font-size:15px;font-weight:600}
+  .auto .a .t{font-size:13px;color:var(--text-2);margin-top:4px;letter-spacing:.06em}
+  .auto .a .u{font-size:12px;color:var(--text-2);margin-top:10px}
+
+  .storia{display:flex;align-items:center;gap:14px;background:var(--surface);
+          border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:8px}
+  .storia .c{flex:1;min-width:0}
+  .storia .s{font-size:15px;font-weight:600}
+  .storia .d{font-size:13px;color:var(--text-2);margin-top:3px}
+  .storia .p{font-family:var(--headline);font-weight:700;font-size:16px;color:var(--accent);white-space:nowrap}
+  .stato{display:inline-block;font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+         border:1px solid var(--border);border-radius:99px;padding:3px 9px;color:var(--text-2);margin-left:8px}
+
+  .voci{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+  .voci a,.voci button{display:flex;align-items:center;gap:14px;width:100%;min-height:56px;
+       padding:0 18px;background:none;border:none;border-bottom:1px solid var(--border);
+       color:var(--text);font-family:var(--body);font-size:15px;cursor:pointer;text-align:left;
+       text-decoration:none;transition:background .2s}
+  .voci a:last-child,.voci button:last-child{border-bottom:none}
+  .voci a:hover,.voci button:hover{background:var(--surface-2)}
+  .voci .material-symbols-outlined{font-size:20px;color:var(--text-2)}
+  .voci .frec{margin-left:auto;font-size:18px}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <img class="logo" src="assets/rope-logo.png" alt="ROPE Car Detailing">
+  <span style="min-width:44px"></span>
+</header>
+
+<main>
+  <div class="testa">
+    <div class="avatar"><span class="material-symbols-outlined">person</span></div>
+    <div>
+      <h1 id="nome">Ospite</h1>
+      <p id="sotto">Non hai ancora un account</p>
+    </div>
+  </div>
+
+  <div class="fedelta" id="fedelta"></div>
+
+  <div class="sezione">Le mie auto</div>
+  <div class="auto" id="auto"></div>
+
+  <div class="sezione">Storico servizi</div>
+  <div id="storico"></div>
+
+  <div class="sezione">Contatti e impostazioni</div>
+  <div class="voci" id="voci"></div>
+
+  <p style="text-align:center;color:var(--text-2);font-size:12px;margin:28px 0 0">
+    ROPE Car Detailing</p>
+</main>
+
+<nav class="tab">
+  <a href="01-home.html"><span class="material-symbols-outlined">home</span>Home</a>
+  <a href="02-servizi.html"><span class="material-symbols-outlined">list</span>Servizi</a>
+  <a href="04-data-e-ora.html"><span class="material-symbols-outlined">calendar_month</span>Prenotazioni</a>
+  <a href="09-profilo.html" class="attivo"><span class="material-symbols-outlined">person</span>Profilo</a>
+</nav>
+
+<script src="assets/config.js"></script>
+<script src="assets/app.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+
+(async function(){
+  let d;
+  try{ d = await ROPE.carica(); }catch(e){ d = {azienda:{}}; }
+  const storico = ROPE.storico();
+  const auto = ROPE.mieAuto();
+
+  /* intestazione */
+  if(storico.length){
+    $("#nome").textContent = 'Cliente ROPE';
+    $("#sotto").textContent = storico.length === 1
+      ? '1 servizio prenotato' : storico.length + ' servizi prenotati';
+  }
+
+  /* fedeltà: ogni 5 servizi */
+  const fatti = storico.length % 5;
+  $("#fedelta").innerHTML = `
+    <div class="e">Cliente ROPE</div>
+    <div class="n">${storico.length ? fatti + (fatti === 1 ? ' servizio' : ' servizi') + ' su 5'
+                                     : 'Inizia il tuo percorso'}</div>
+    <div class="barra-p"><i style="width:${(fatti/5*100)}%"></i></div>
+    <small>${storico.length ? 'Al quinto servizio ti aspetta un lavaggio omaggio.'
+                            : 'Prenota il primo trattamento per iniziare a raccogliere i servizi.'}</small>`;
+
+  /* auto */
+  const ca = $("#auto");
+  if(!auto.length){
+    ca.innerHTML = '<p class="vuoto" style="padding:20px 0;font-size:14px">' +
+                   'Nessuna auto registrata.</p>';
+  }else{
+    auto.forEach(x => {
+      const a = x.auto || {};
+      const div = document.createElement('div');
+      div.className = 'a';
+      div.innerHTML = `<div class="m">${ROPE.esc([a.marca,a.modello].filter(Boolean).join(' ') || 'Auto')}</div>
+        <div class="t">${ROPE.esc(a.targa || '')}</div>
+        <div class="u">Ultimo servizio: ${ROPE.esc(x.ultimo.data || '—')}</div>`;
+      ca.appendChild(div);
+    });
+  }
+
+  /* storico */
+  const cs = $("#storico");
+  if(!storico.length){
+    cs.innerHTML = '<p class="vuoto" style="padding:20px 0;font-size:14px">' +
+                   'Nessun servizio ancora.<br>' +
+                   '<a class="btn" href="02-servizi.html" style="margin-top:14px">Prenota il primo</a></p>';
+  }else{
+    storico.forEach(v => {
+      const div = document.createElement('div');
+      div.className = 'storia';
+      const a = v.auto || {};
+      div.innerHTML = `<div class="c">
+          <div class="s">${ROPE.esc(v.servizio || 'Servizio')}
+            <span class="stato">${ROPE.esc(v.stato || 'Confermato')}</span></div>
+          <div class="d">${ROPE.esc(v.data || '')}${v.ora ? ' · ' + ROPE.esc(v.ora) : ''}
+            ${a.targa ? ' · ' + ROPE.esc(a.targa) : ''}</div>
+        </div><div class="p">${ROPE.esc(v.totale || '')}</div>`;
+      cs.appendChild(div);
+    });
+  }
+
+  /* contatti e impostazioni */
+  const az = d.azienda || {};
+  const tel = (az.whatsapp || az.telefono || '').replace(/[^0-9+]/g,'');
+  const voci = [];
+  if(az.whatsapp) voci.push({i:'chat', n:'Scrivici su WhatsApp',
+    href:'https://wa.me/' + tel.replace('+',''), esterno:true});
+  if(az.telefono) voci.push({i:'call', n:'Chiama lo studio', href:'tel:' + tel});
+  if(az.indirizzo) voci.push({i:'location_on', n:az.indirizzo,
+    href:'https://maps.apple.com/?q=' + encodeURIComponent(az.indirizzo), esterno:true});
+  if(az.orari) voci.push({i:'schedule', n:az.orari, statico:true});
+  voci.push({i:'notifications', n:'Notifiche', statico:true});
+  voci.push({i:'description', n:'Termini e privacy', statico:true});
+
+  $("#voci").innerHTML = voci.map(v => v.statico
+    ? `<button type="button"><span class="material-symbols-outlined">${v.i}</span>${ROPE.esc(v.n)}
+       <span class="material-symbols-outlined frec">chevron_right</span></button>`
+    : `<a href="${ROPE.esc(v.href)}" ${v.esterno ? 'target="_blank" rel="noopener"' : ''}>
+       <span class="material-symbols-outlined">${v.i}</span>${ROPE.esc(v.n)}
+       <span class="material-symbols-outlined frec">chevron_right</span></a>`).join('');
+})();
+</script>
+</body>
+</html>

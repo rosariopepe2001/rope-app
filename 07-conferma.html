@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="it" class="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Prenotazione confermata — ROPE Car Detailing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+<link href="assets/app.css" rel="stylesheet">
+<style>
+  .cerchio{width:96px;height:96px;border-radius:50%;background:var(--surface);
+           border:1px solid var(--border);margin:32px auto 0;
+           display:flex;align-items:center;justify-content:center}
+  .cerchio .material-symbols-outlined{font-size:44px;color:var(--accent)}
+  h1.ok{font-family:var(--headline);font-size:24px;font-weight:700;letter-spacing:.12em;
+        text-transform:uppercase;text-align:center;margin:24px 0 8px;line-height:1.35}
+  .quando{text-align:center;color:var(--text-2);font-size:15px;margin:0 0 28px}
+  .voce{display:flex;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid var(--border)}
+  .voce:last-child{border-bottom:none}
+  .voce .e{font-size:12px;color:var(--text-2);letter-spacing:.08em;text-transform:uppercase}
+  .voce .v{font-size:15px;margin-top:3px}
+  .codice{font-family:var(--headline);font-weight:700;color:var(--accent)}
+  .due{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+  .contatti{display:flex;gap:10px;margin-top:14px}
+  .contatti a{flex:1}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <span style="min-width:44px"></span>
+  <img class="logo" src="assets/rope-mark.png" alt="ROPE" style="height:26px">
+  <a href="01-home.html" aria-label="Chiudi"><span class="material-symbols-outlined">close</span></a>
+</header>
+
+<main>
+  <div class="cerchio"><span class="material-symbols-outlined">check</span></div>
+  <h1 class="ok">Prenotazione<br>confermata</h1>
+  <p class="quando" id="quando"></p>
+
+  <div class="carta" id="recap"></div>
+
+  <div class="due">
+    <button class="btn" type="button">Aggiungi al calendario</button>
+    <button class="btn" type="button" id="indicazioni">Indicazioni</button>
+  </div>
+
+  <div class="sezione">Lo studio</div>
+  <div class="carta" id="studio"></div>
+
+  <a class="btn primario pieno" href="01-home.html" style="margin-top:24px">Torna alla home</a>
+</main>
+
+<script src="assets/config.js"></script>
+<script src="assets/app.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+
+(async function(){
+  let d;
+  try{ d = await ROPE.carica(); }catch(e){ return; }
+  const s = ROPE.selezione();
+  const t = s.pacchettoId ? ROPE.trovaLivello(s.pacchettoId, s.livelloId) : null;
+
+  $("#quando").textContent = s.data
+    ? `Ti aspettiamo ${s.data}${s.ora ? ' alle ' + s.ora : ''}`
+    : 'Ti contatteremo per confermare data e ora';
+
+  const a = s.auto || {};
+  const auto = [a.marca, a.modello].filter(Boolean).join(' ');
+  const tot = ROPE.totale();
+  $("#recap").innerHTML = `
+    ${t ? `<div class="voce"><div><div class="e">Servizio</div>
+      <div class="v">${ROPE.esc(t.livello.titolo || t.livello.nome)}</div></div>
+      <div style="text-align:right"><div class="e">Totale</div>
+      <div class="v codice">${tot.testo}</div></div></div>` : ''}
+    ${auto ? `<div class="voce"><div><div class="e">Auto</div>
+      <div class="v">${ROPE.esc(auto)}${a.targa ? ' · ' + ROPE.esc(a.targa) : ''}</div></div></div>` : ''}
+    <div class="voce"><div><div class="e">Codice prenotazione</div>
+      <div class="v codice">${ROPE.esc(s.codice || '—')}</div></div></div>`;
+
+  const az = d.azienda || {};
+  const tel = (az.whatsapp || az.telefono || '').replace(/[^0-9+]/g,'');
+  $("#studio").innerHTML = `
+    <div class="voce"><div><div class="e">Indirizzo</div>
+      <div class="v">${ROPE.esc(az.indirizzo || 'Da definire')}</div></div></div>
+    ${az.orari ? `<div class="voce"><div><div class="e">Orari</div>
+      <div class="v">${ROPE.esc(az.orari)}</div></div></div>` : ''}
+    <div class="contatti">
+      ${az.telefono ? `<a class="btn" href="tel:${ROPE.esc(tel)}">
+        <span class="material-symbols-outlined">call</span>Chiama</a>` : ''}
+      ${az.whatsapp ? `<a class="btn" href="https://wa.me/${ROPE.esc(tel.replace('+',''))}" target="_blank" rel="noopener">
+        <span class="material-symbols-outlined">chat</span>WhatsApp</a>` : ''}
+    </div>`;
+
+  $("#indicazioni").addEventListener('click', () => {
+    if(az.indirizzo)
+      window.open('https://maps.apple.com/?q=' + encodeURIComponent(az.indirizzo), '_blank');
+  });
+})();
+</script>
+</body>
+</html>

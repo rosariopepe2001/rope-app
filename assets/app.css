@@ -1,0 +1,97 @@
+/* Stile comune delle schermate ROPE collegate ai dati */
+:root{
+  --bg:#0A0A0B; --surface:#16161A; --surface-2:#1D1D22; --border:#26262C;
+  --text:#F2F2F4; --text-2:#A0A0A8; --accent:#D4D7DC;
+  --headline:'Sora',-apple-system,BlinkMacSystemFont,sans-serif;
+  --body:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--body);
+     font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;
+     padding-bottom:calc(96px + env(safe-area-inset-bottom))}
+.material-symbols-outlined{font-family:'Material Symbols Outlined';font-weight:normal;
+     font-style:normal;line-height:1;letter-spacing:normal;text-transform:none;
+     display:inline-block;white-space:nowrap;word-wrap:normal;direction:ltr}
+
+/* barra in alto */
+.top{position:sticky;top:0;z-index:50;background:var(--bg);border-bottom:1px solid var(--border);
+     height:64px;padding:0 20px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.top img.logo{height:24px;width:auto}
+.top .titolo{font-family:var(--headline);font-size:13px;letter-spacing:.16em;
+             text-transform:uppercase;font-weight:600}
+.top a,.top button{background:none;border:none;color:var(--text);cursor:pointer;text-decoration:none;
+     min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center}
+
+main{padding:24px 20px 0;max-width:720px;margin:0 auto}
+h1.tit{font-family:var(--headline);font-size:26px;font-weight:700;
+       letter-spacing:.14em;text-transform:uppercase;margin:0 0 6px}
+.intro{color:var(--text-2);font-size:14px;margin:0 0 24px}
+.sezione{font-family:var(--headline);font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+         color:var(--text-2);font-weight:600;margin:28px 0 12px}
+
+/* selettore taglia */
+.selettore{background:var(--surface);border:1px solid var(--border);border-radius:20px;
+           padding:18px;margin-bottom:24px}
+.selettore .tit{font-family:var(--headline);font-size:11px;letter-spacing:.18em;
+                text-transform:uppercase;color:var(--text-2);font-weight:600;margin-bottom:14px}
+.chips{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.chip{min-height:56px;border-radius:14px;border:1px solid var(--border);background:var(--surface-2);
+      color:var(--text-2);cursor:pointer;font-family:var(--headline);font-weight:600;font-size:14px;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+      transition:border-color .2s,background .2s,color .2s;padding:6px 2px}
+.chip small{font-family:var(--body);font-size:10px;font-weight:400}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.spiega{margin-top:14px;font-size:13px;color:var(--text-2);line-height:1.5;
+        background:var(--surface-2);border-radius:12px;padding:12px 14px}
+.spiega b{color:var(--text);font-weight:600}
+
+/* carte */
+.carta{background:var(--surface);border:1px solid var(--border);border-radius:20px;
+       padding:20px;margin-bottom:12px;position:relative}
+.carta.evidenza{border-color:var(--accent)}
+.badge{position:absolute;top:-10px;left:20px;background:var(--accent);color:var(--bg);
+       font-family:var(--headline);font-size:10px;font-weight:700;letter-spacing:.14em;
+       text-transform:uppercase;padding:4px 10px;border-radius:99px}
+.nota{font-size:13px;color:var(--accent);margin-top:12px;line-height:1.5;
+      background:rgba(212,215,220,.07);border-radius:12px;padding:12px 14px;
+      display:flex;gap:10px;align-items:flex-start}
+.nota .material-symbols-outlined{font-size:18px;flex:0 0 auto;margin-top:1px;opacity:.8}
+
+.prezzo{font-family:var(--headline);font-weight:700;font-size:30px;color:var(--accent);line-height:1}
+.prezzo small{display:block;font-family:var(--body);font-size:11px;font-weight:400;
+              letter-spacing:.1em;text-transform:uppercase;color:var(--text-2);margin-bottom:6px}
+.prezzo.richiesta{font-size:20px}
+
+.btn{min-height:52px;border-radius:99px;border:1px solid var(--border);background:transparent;
+     color:var(--text);font-family:var(--headline);font-size:13px;font-weight:600;letter-spacing:.08em;
+     text-transform:uppercase;padding:0 24px;cursor:pointer;text-decoration:none;
+     display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:background .2s,border-color .2s}
+.btn.primario{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.btn.primario:hover{background:#E6E9ED}
+.btn:hover{border-color:var(--accent)}
+.btn.pieno{width:100%}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+
+/* barra fissa in basso */
+.barra{position:fixed;left:0;right:0;bottom:0;z-index:60;background:rgba(10,10,11,.96);
+       backdrop-filter:blur(12px);border-top:1px solid var(--border);
+       padding:12px 20px calc(12px + env(safe-area-inset-bottom));
+       display:flex;align-items:center;gap:16px}
+.barra .totale{flex:1;min-width:0}
+.barra .totale small{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-2)}
+.barra .totale b{font-family:var(--headline);font-size:24px;color:var(--accent);font-weight:700}
+
+/* tab bar */
+nav.tab{position:fixed;left:0;right:0;bottom:0;z-index:50;background:rgba(10,10,11,.96);
+        backdrop-filter:blur(12px);border-top:1px solid var(--border);
+        display:flex;padding-bottom:env(safe-area-inset-bottom)}
+nav.tab a{flex:1;min-height:64px;display:flex;flex-direction:column;align-items:center;
+          justify-content:center;gap:3px;color:var(--text-2);text-decoration:none;
+          font-size:10px;letter-spacing:.1em;text-transform:uppercase}
+nav.tab a.attivo{color:var(--accent)}
+nav.tab .material-symbols-outlined{font-size:22px}
+
+.vuoto{text-align:center;color:var(--text-2);padding:48px 20px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
