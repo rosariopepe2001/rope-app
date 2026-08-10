@@ -7,8 +7,8 @@
     "orari": "Lun-Sab 8:30 - 18:30"
   },
   "promo": {
-    "attiva": true,
-    "testo": "Prova di pubblicazione — ora la tolgo"
+    "attiva": false,
+    "testo": ""
   },
   "taglie": [
     {
