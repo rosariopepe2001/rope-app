@@ -468,11 +468,14 @@
         <option value="completata">Già completata</option>
       </select>
 
-      <p class="nota" id="n-errore" style="color:var(--danger)" hidden></p>
     </div>
-    <div class="azioni">
-      <button class="btn" value="annulla">Annulla</button>
-      <button class="btn primario" type="button" id="n-salva">Salva prenotazione</button>
+    <div class="azioni" style="flex-direction:column;align-items:stretch;gap:0">
+      <p class="nota" id="n-errore"
+         style="color:var(--danger);margin:0 0 12px;line-height:1.5" hidden></p>
+      <div style="display:flex;gap:10px">
+        <button class="btn" value="annulla">Annulla</button>
+        <button class="btn primario" type="button" id="n-salva">Salva prenotazione</button>
+      </div>
     </div>
   </form>
 </dialog>
@@ -599,9 +602,11 @@
   </form>
 </dialog>
 
-<script src="assets/config.js"></script>
-<script src="assets/app.js"></script>
-<script src="assets/pannello-api.js"></script>
+<!-- il numero dopo ?v= va cambiato a ogni modifica di questi file:
+     costringe telefoni e browser a riscaricarli invece di usare la copia vecchia -->
+<script src="assets/config.js?v=2"></script>
+<script src="assets/app.js?v=2"></script>
+<script src="assets/pannello-api.js?v=2"></script>
 <script>
 const $ = s => document.querySelector(s);
 let dati = null, modificato = false;
@@ -1352,7 +1357,10 @@ function nLivello(){
 }
 function nErrore(msg){
   const e = $("#n-errore");
-  if(msg){ e.textContent = msg; e.hidden = false; } else { e.hidden = true; }
+  if(msg){
+    e.textContent = msg; e.hidden = false;
+    e.scrollIntoView({block: 'nearest'});
+  } else e.hidden = true;
 }
 function nOraApertura(data){
   const g = ((dati.disponibilita || {}).giorni || {})[String(data.getDay() === 0 ? 7 : data.getDay())];
