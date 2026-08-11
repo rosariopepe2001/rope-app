@@ -140,6 +140,31 @@ window.ROPE_ACCESSO = (function(){
       return risposta({collegato: true, prenotazioni: await r.json()});
     },
 
+    /* Prenotazione scritta a mano da lui, per un cliente allo studio. */
+    async prenotazioniPOST(corpo){
+      if(!corpo || !corpo.cliente_nome)
+        return risposta({errore: "Serve almeno il nome del cliente"}, 400);
+      const r = await rest("/rest/v1/prenotazioni", {
+        method: "POST",
+        headers: {"Prefer": "return=representation"},
+        body: JSON.stringify(corpo)
+      });
+      if(!r) return scaduta();
+      if(r.status === 401) return scaduta();
+      if(r.status === 403)
+        return risposta({errore: "Supabase non ti lascia ancora scrivere: incolla "
+                                 + "supabase/prenotazione-manuale.sql nel SQL Editor."}, 403);
+      if(!r.ok){
+        const m = await leggiErrore(r);
+        return risposta({errore: /policy|permission|row-level/i.test(m)
+          ? "Supabase non ti lascia ancora scrivere: incolla "
+            + "supabase/prenotazione-manuale.sql nel SQL Editor."
+          : m}, 502);
+      }
+      const righe = await r.json();
+      return risposta({ok: true, prenotazione: righe[0] || null});
+    },
+
     async prenotazioniPATCH(corpo){
       const id = corpo && corpo.id, stato = corpo && corpo.stato;
       if(!id || !stato) return risposta({errore: "Serve id e uno stato valido"}, 400);
@@ -227,6 +252,7 @@ window.ROPE_ACCESSO = (function(){
         return metodo === "POST" ? AZIONI.datiPOST(corpo) : AZIONI.datiGET();
 
       if(url.startsWith("/api/prenotazioni")){
+        if(metodo === "POST")   return AZIONI.prenotazioniPOST(corpo);
         if(metodo === "PATCH")  return AZIONI.prenotazioniPATCH(corpo);
         if(metodo === "DELETE") return AZIONI.prenotazioniDELETE(corpo);
         return AZIONI.prenotazioniGET();

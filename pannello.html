@@ -81,7 +81,8 @@
   .tag.off{border-color:var(--danger);color:var(--danger)}
 
   label{display:block;font-size:13px;color:var(--text-2);margin:16px 0 6px;font-weight:500}
-  input[type=text],input[type=number],textarea,select{
+  input[type=text],input[type=number],input[type=email],input[type=password],
+  input[type=tel],input[type=date],input[type=time],textarea,select{
     width:100%;min-height:48px;background:var(--surface);color:var(--text);
     border:1px solid var(--border);border-radius:12px;padding:12px 14px;
     font-family:var(--body);font-size:16px}
@@ -217,7 +218,8 @@
   <section id="p-prenotazioni" role="tabpanel" aria-labelledby="tab-prenotazioni">
     <h2>Prenotazioni</h2>
     <p class="sub">Le richieste che arrivano dall'app.</p>
-    <div id="lista-prenotazioni"><p class="vuoto">Carico…</p></div>
+    <button class="btn primario pieno" id="nuova-pren">+ Prenotazione a mano</button>
+    <div id="lista-prenotazioni" style="margin-top:18px"><p class="vuoto">Carico…</p></div>
     <button class="btn pieno" id="ricarica-pren" style="margin-top:8px">Aggiorna</button>
   </section>
 
@@ -385,6 +387,96 @@
   <button class="btn primario" id="salva" disabled>Salva</button>
 </div>
 
+<!-- prenotazione scritta a mano -->
+<dialog id="dlg-nuova" aria-labelledby="dlg-nuova-titolo">
+  <form method="dialog">
+    <div class="testata">
+      <h3 id="dlg-nuova-titolo">Prenotazione a mano</h3>
+      <button class="btn piccolo" value="annulla" aria-label="Chiudi senza salvare">Chiudi</button>
+    </div>
+    <div class="contenuto">
+      <p class="nota" style="margin-top:0">Per il cliente che ti chiama o si presenta allo
+        studio. Finisce nell'elenco insieme a quelle che arrivano dall'app, e occupa
+        l'orario, così nessuno può prenotarlo online.</p>
+
+      <div class="gruppo">Cliente</div>
+
+      <label for="n-nome">Nome e cognome</label>
+      <input type="text" id="n-nome" placeholder="Mario Rossi" autocomplete="off">
+
+      <label for="n-tel">Telefono <small>(per chiamarlo o scrivergli su WhatsApp)</small></label>
+      <input type="tel" id="n-tel" placeholder="327 1234567" autocomplete="off">
+
+      <div class="gruppo">Servizio</div>
+
+      <label for="n-pacchetto">Pacchetto</label>
+      <select id="n-pacchetto"></select>
+
+      <label for="n-livello">Servizio</label>
+      <select id="n-livello"></select>
+
+      <label for="n-taglia">Taglia dell'auto</label>
+      <select id="n-taglia"></select>
+
+      <div id="n-extra-box" hidden>
+        <label>Extra</label>
+        <div id="n-extra"></div>
+      </div>
+
+      <div class="gruppo">Quando</div>
+
+      <label for="n-data">Giorno</label>
+      <input type="date" id="n-data">
+
+      <div id="n-ora-box">
+        <label for="n-ora">Ora</label>
+        <select id="n-ora"></select>
+      </div>
+
+      <div id="n-ora-libera-box" hidden>
+        <label for="n-ora-libera">Scrivi l'ora che vuoi</label>
+        <input type="time" id="n-ora-libera" step="300">
+      </div>
+
+      <p class="nota" id="n-avviso" hidden></p>
+
+      <div class="gruppo">Auto</div>
+
+      <label for="n-marca">Marca</label>
+      <input type="text" id="n-marca" placeholder="Volkswagen" autocomplete="off">
+
+      <label for="n-modello">Modello</label>
+      <input type="text" id="n-modello" placeholder="Golf" autocomplete="off">
+
+      <label for="n-targa">Targa</label>
+      <input type="text" id="n-targa" placeholder="AB123CD" autocomplete="off"
+             style="text-transform:uppercase">
+
+      <div class="gruppo">Conto e note</div>
+
+      <label for="n-totale">Totale <small id="n-totale-aiuto"></small></label>
+      <input type="text" id="n-totale" placeholder="€0">
+
+      <label for="n-note">Note</label>
+      <textarea id="n-note" style="min-height:90px"
+                placeholder="Cerchi molto sporchi, ritira il padre…"></textarea>
+
+      <label for="n-stato">Stato</label>
+      <select id="n-stato">
+        <option value="confermata">Confermata</option>
+        <option value="nuova">Da confermare</option>
+        <option value="completata">Già completata</option>
+      </select>
+
+      <p class="nota" id="n-errore" style="color:var(--danger)" hidden></p>
+    </div>
+    <div class="azioni">
+      <button class="btn" value="annulla">Annulla</button>
+      <button class="btn primario" type="button" id="n-salva">Salva prenotazione</button>
+    </div>
+  </form>
+</dialog>
+
 <!-- livello / extra -->
 <dialog id="dlg-voce" aria-labelledby="dlg-voce-titolo">
   <form method="dialog">
@@ -508,6 +600,7 @@
 </dialog>
 
 <script src="assets/config.js"></script>
+<script src="assets/app.js"></script>
 <script src="assets/pannello-api.js"></script>
 <script>
 const $ = s => document.querySelector(s);
@@ -1246,6 +1339,260 @@ $("#pubblica").addEventListener('click', async () => {
 });
 
 window.addEventListener('beforeunload', e => { if(modificato){ e.preventDefault(); e.returnValue=''; } });
+
+/* ---------- prenotazione scritta a mano ----------
+   Per il cliente che chiama o si presenta allo studio. Usa gli stessi
+   calcoli dell'app (durate, prezzi, orari occupati) tramite ROPE. */
+const dlgN = $("#dlg-nuova");
+
+function nPacchetto(){ return dati.pacchetti.find(p => p.id === $("#n-pacchetto").value) || null; }
+function nLivello(){
+  const p = nPacchetto();
+  return p ? (p.livelli || []).find(l => l.id === $("#n-livello").value) || null : null;
+}
+function nErrore(msg){
+  const e = $("#n-errore");
+  if(msg){ e.textContent = msg; e.hidden = false; } else { e.hidden = true; }
+}
+function nOraApertura(data){
+  const g = ((dati.disponibilita || {}).giorni || {})[String(data.getDay() === 0 ? 7 : data.getDay())];
+  return (g && g.da) || "09:00";
+}
+
+function nRiempiPacchetti(){
+  const s = $("#n-pacchetto"); s.innerHTML = "";
+  dati.pacchetti.forEach(p => {
+    const o = document.createElement('option');
+    o.value = p.id;
+    o.textContent = p.nome + (p.attivo === false ? '  (nascosto nell\'app)' : '');
+    s.appendChild(o);
+  });
+}
+
+function nRiempiLivelli(){
+  const p = nPacchetto(), s = $("#n-livello"); s.innerHTML = "";
+  (p ? p.livelli || [] : []).forEach(l => {
+    const o = document.createElement('option');
+    o.value = l.id;
+    o.textContent = (l.titolo || l.nome) + (l.attivo === false ? '  (nascosto nell\'app)' : '');
+    s.appendChild(o);
+  });
+  nRiempiExtra();
+}
+
+function nRiempiExtra(){
+  const p = nPacchetto(), c = $("#n-extra");
+  // se cambia solo la taglia, gli extra già scelti restano scelti
+  const scelti = [...c.querySelectorAll('input:checked')].map(i => i.value);
+  c.innerHTML = "";
+  const lista = p ? (p.extra || []) : [];
+  $("#n-extra-box").hidden = !lista.length;
+  lista.forEach(x => {
+    // stesso interruttore usato nel resto del pannello: i checkbox nudi
+    // qui dentro sono invisibili di proposito
+    const l = document.createElement('label');
+    l.className = 'interruttore';
+    l.innerHTML = `<span>${esc(x.nome)}
+      <small>${esc(ROPE.testoPrezzo(x, $("#n-taglia").value))}</small></span>`;
+    const i = document.createElement('input');
+    i.type = 'checkbox'; i.value = x.id;
+    i.checked = scelti.includes(x.id);
+    i.addEventListener('change', nAggiornaTotale);
+    const binario = document.createElement('span');
+    binario.className = 'binario'; binario.setAttribute('aria-hidden', 'true');
+    l.appendChild(i); l.appendChild(binario); c.appendChild(l);
+  });
+}
+
+function nRiempiTaglie(){
+  const s = $("#n-taglia"); s.innerHTML = "";
+  dati.taglie.forEach(t => {
+    const o = document.createElement('option');
+    o.value = t.id;
+    o.textContent = t.nome + (t.etichetta ? ' — ' + t.etichetta : '');
+    s.appendChild(o);
+  });
+}
+
+function nSelezione(){
+  const p = nPacchetto(), l = nLivello();
+  return {
+    pacchettoId: p ? p.id : null,
+    livelloId: l ? l.id : null,
+    taglia: $("#n-taglia").value,
+    extra: [...document.querySelectorAll('#n-extra input:checked')]
+             .map(i => ({id: i.value, pacchettoId: p ? p.id : null}))
+  };
+}
+
+function nAggiornaTotale(){
+  const t = ROPE.totale(nSelezione());
+  $("#n-totale").value = t.testo;
+  $("#n-totale-aiuto").textContent = t.suRichiesta
+    ? '(prezzo non impostato: scrivilo tu)' : '(calcolato, puoi cambiarlo)';
+}
+
+/* Riempie l'elenco delle ore, segnando quelle già occupate.
+   Lui può prenotarle lo stesso: gli chiedo solo conferma. */
+async function nAggiornaOrari(){
+  const avviso = $("#n-avviso"), sel = $("#n-ora");
+  const iso = $("#n-data").value;
+  const p = nPacchetto(), l = nLivello();
+  sel.innerHTML = ""; avviso.hidden = true;
+  $("#n-ora-box").hidden = false; $("#n-ora-libera-box").hidden = true;
+  if(!iso || !p || !l) return;
+
+  const data = new Date(iso + 'T00:00:00');
+  const giorni = ROPE.giorniDi(p.id, l.id);
+
+  if(giorni > 1){
+    $("#n-ora-box").hidden = true;
+    avviso.textContent = `Questo servizio occupa ${giorni} giornate intere, `
+      + `a partire da quel giorno. L'orario lo metto io all'apertura (${nOraApertura(data)}).`;
+    avviso.hidden = false;
+    return;
+  }
+
+  sel.innerHTML = '<option>Guardo gli orari…</option>';
+  let slot = [];
+  try{
+    slot = await ROPE.slotLiberi(data, ROPE.durataPerGiorno(p.id, l.id, data),
+                                 {ignoraPreavviso: true});
+  }catch(e){ /* si passa all'ora scritta a mano */ }
+
+  if(!slot.length){
+    $("#n-ora-box").hidden = true;
+    $("#n-ora-libera-box").hidden = false;
+    avviso.textContent = ROPE.giornoChiuso(data)
+      ? 'Quel giorno risulta chiuso. Puoi prenotarlo lo stesso: scrivi tu l\'ora.'
+      : 'In quella giornata il lavoro non ci sta per intero. Scrivi tu l\'ora.';
+    avviso.hidden = false;
+    return;
+  }
+
+  sel.innerHTML = "";
+  slot.forEach(s => {
+    const o = document.createElement('option');
+    o.value = s.ora;
+    o.textContent = s.ora + (s.libero ? '' : '   —   occupato');
+    o.dataset.libero = s.libero ? 'si' : 'no';
+    sel.appendChild(o);
+  });
+  const altro = document.createElement('option');
+  altro.value = '__altro'; altro.textContent = 'Altro orario…';
+  sel.appendChild(altro);
+
+  const primoLibero = slot.find(s => s.libero);
+  sel.value = primoLibero ? primoLibero.ora : slot[0].ora;
+
+  const liberi = slot.filter(s => s.libero).length;
+  if(!liberi){
+    avviso.textContent = 'Quel giorno è tutto occupato. Puoi comunque forzare un orario.';
+    avviso.hidden = false;
+  }
+}
+
+/* Invio dentro un campo non deve chiudere la finestra buttando via tutto */
+dlgN.querySelector('form').addEventListener('submit', e => {
+  if(!e.submitter) e.preventDefault();
+});
+
+$("#n-pacchetto").addEventListener('change', () => {
+  nRiempiLivelli(); nAggiornaTotale(); nAggiornaOrari();
+});
+$("#n-livello").addEventListener('change', () => { nAggiornaTotale(); nAggiornaOrari(); });
+$("#n-taglia").addEventListener('change', () => { nRiempiExtra(); nAggiornaTotale(); });
+$("#n-data").addEventListener('change', nAggiornaOrari);
+$("#n-ora").addEventListener('change', () => {
+  $("#n-ora-libera-box").hidden = $("#n-ora").value !== '__altro';
+});
+
+$("#nuova-pren").addEventListener('click', () => {
+  if(!dati){ segnaErrore("Aspetta che i dati finiscano di caricare."); return; }
+  if(!dati.pacchetti.length){ segnaErrore("Prima crea almeno un pacchetto."); return; }
+
+  ROPE.usaDati(dati);            // usa esattamente i dati che ha davanti
+  nErrore(null);
+  ["#n-nome","#n-tel","#n-marca","#n-modello","#n-targa","#n-note","#n-ora-libera"]
+    .forEach(s => $(s).value = "");
+  $("#n-stato").value = 'confermata';
+  nRiempiPacchetti(); nRiempiTaglie(); nRiempiLivelli();
+  $("#n-data").value = ROPE.dataISO(new Date());
+  nAggiornaTotale(); nAggiornaOrari();
+  dlgN.showModal();
+});
+
+$("#n-salva").addEventListener('click', async () => {
+  nErrore(null);
+  const nome = $("#n-nome").value.trim();
+  const p = nPacchetto(), l = nLivello();
+  const iso = $("#n-data").value;
+
+  if(!nome) return nErrore("Serve almeno il nome del cliente.");
+  if(!p || !l) return nErrore("Scegli il pacchetto e il servizio.");
+  if(!iso) return nErrore("Scegli il giorno.");
+
+  const data = new Date(iso + 'T00:00:00');
+  const giorni = ROPE.giorniDi(p.id, l.id);
+
+  let ora, occupato = false;
+  if(giorni > 1) ora = nOraApertura(data);
+  else if($("#n-ora-box").hidden || $("#n-ora").value === '__altro') ora = $("#n-ora-libera").value;
+  else {
+    ora = $("#n-ora").value;
+    const scelta = [...$("#n-ora").options].find(o => o.value === ora);
+    occupato = scelta && scelta.dataset.libero === 'no';
+  }
+  if(!ora) return nErrore("Scegli o scrivi l'ora.");
+  if(occupato && !confirm(`Le ${ora} risultano già occupate da un altro lavoro.\n\n`
+                          + `La metto lo stesso?`)) return;
+
+  const sel = nSelezione();
+  const b = $("#n-salva");
+  b.disabled = true; b.textContent = 'Salvo…';
+  try{
+    const r = await fetch('/api/prenotazioni', {method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        codice: '#RP-' + Math.floor(1000 + Math.random()*9000),
+        stato: $("#n-stato").value,
+        cliente_nome: nome,
+        cliente_tel: $("#n-tel").value.trim() || null,
+        pacchetto: p.nome,
+        pacchetto_id: p.id,
+        servizio: l.titolo || l.nome,
+        livello_id: l.id,
+        taglia: sel.taglia || null,
+        extra: sel.extra.map(e => {
+          const x = ROPE.trovaExtra(p.id, e.id);
+          return {id: e.id, nome: x ? x.nome : e.id};
+        }),
+        totale: $("#n-totale").value.trim() || ROPE.totale(sel).testo,
+        data_app: iso,
+        ora: ora,
+        durata_minuti: ROPE.durataPerGiorno(p.id, l.id, data),
+        giorni: giorni,
+        auto: {marca: $("#n-marca").value.trim(),
+               modello: $("#n-modello").value.trim(),
+               targa: $("#n-targa").value.trim().toUpperCase()},
+        note: $("#n-note").value.trim() || null,
+        pagamento: 'sede'
+      })});
+    const out = await r.json();
+    if(!r.ok || out.errore) throw new Error(out.errore || 'errore');
+    dlgN.close();
+    // se stava modificando prezzi o orari, non gli spengo il pulsante Salva
+    if(modificato){
+      const s = $("#stato");
+      s.className = "stato modificato";
+      s.textContent = "Prenotazione aggiunta — hai ancora modifiche da salvare";
+    } else segnaSalvato("Prenotazione aggiunta");
+    caricaPrenotazioni();
+  }catch(e){
+    nErrore("Non salvata: " + e.message);
+  }
+  b.disabled = false; b.textContent = 'Salva prenotazione';
+});
 
 /* ---------- accesso con password ---------- */
 const ACCESSO = window.ROPE_ACCESSO;

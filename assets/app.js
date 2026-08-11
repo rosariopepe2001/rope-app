@@ -29,6 +29,17 @@ window.ROPE = (function(){
     return r.json();
   }
 
+  /* Usa dati già pronti invece di riscaricarli. Serve al pannello di
+     gestione: così prezzi e orari usati per una prenotazione manuale
+     sono esattamente quelli che ha davanti agli occhi. */
+  function usaDati(d){
+    dati = d;
+    dati.taglie = dati.taglie || [];
+    dati.pacchetti = dati.pacchetti || [];
+    dati.galleria = dati.galleria || [];
+    return dati;
+  }
+
   async function carica(){
     if(dati) return dati;
     dati = await scarica();
@@ -167,7 +178,9 @@ window.ROPE = (function(){
 
   /* Costruisce gli orari proponibili per un giorno, tolti pausa,
      preavviso minimo e appuntamenti già presi. */
-  async function slotLiberi(data, durataMinuti){
+  /* opzioni.ignoraPreavviso: usato dal pannello di gestione, che deve poter
+     prenotare un cliente anche per fra un'ora. */
+  async function slotLiberi(data, durataMinuti, opzioni){
     const disp = dati.disponibilita || {};
     if(giornoChiuso(data)) return [];
 
@@ -188,7 +201,9 @@ window.ROPE = (function(){
     });
 
     const adesso = new Date();
-    const minimo = new Date(adesso.getTime() + (disp.preavvisoOre ?? 12) * 3600000);
+    const minimo = (opzioni && opzioni.ignoraPreavviso)
+      ? new Date(0)
+      : new Date(adesso.getTime() + (disp.preavvisoOre ?? 12) * 3600000);
 
     const slot = [];
     for(let m = apre; m <= chiude; m += passo){
@@ -345,7 +360,7 @@ window.ROPE = (function(){
            (t.esempi ? `<br>${esc(t.esempi)}` : '');
   }
 
-  return {carica, esc, taglia, impostaTaglia, tagliaOggetto, selezione, salvaSelezione,
+  return {carica, usaDati, esc, taglia, impostaTaglia, tagliaOggetto, selezione, salvaSelezione,
           aggiorna, azzera, trovaLivello, trovaExtra, prezzoDi, testoPrezzo, euro,
           totale, disegnaChipsTaglia, testoSpiegaTaglia,
           storico, aggiungiAStorico, mieAuto, collegato, inviaPrenotazione,
