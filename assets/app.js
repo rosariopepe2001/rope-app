@@ -1,29 +1,67 @@
 /* Motore comune delle schermate ROPE.
-   Legge dati/dati.json (scritto dal pannello di gestione) e tiene in memoria
-   la taglia scelta e la prenotazione in corso. */
+   Legge prezzi, orari e galleria da Supabase (li cambia il pannello di
+   gestione) e tiene in memoria la taglia scelta e la prenotazione in corso. */
 window.ROPE = (function(){
   let dati = null;
 
   const esc = t => String(t ?? "").replace(/[&<>"']/g, c =>
     ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-  /* Prezzi, orari e galleria arrivano da Supabase: così il pannello
-     può cambiarli da qualsiasi posto e l'app se ne accorge subito.
-     Se Supabase non risponde, si usa la copia dentro il sito. */
+  /* ---- da dove arrivano prezzi, orari e galleria ----
+     1. da Supabase, sempre che ci sia rete: è la versione buona,
+        quella che il pannello cambia in qualsiasi momento;
+     2. altrimenti l'ultima scaricata davvero, tenuta sul telefono;
+     3. e solo al primissimo avvio senza rete, la copia dentro l'app.
+
+     Il punto 2 esiste perché la copia dentro l'app resta ferma al giorno
+     in cui è stata pubblicata sull'App Store: senza memoria, un cliente
+     offline dopo sei mesi vedrebbe i prezzi di sei mesi fa. */
+  const MEMORIA_DATI = 'rope-dati';
+  const ATTESA_MAX = 8000;      // ms: oltre, si usa quello che abbiamo già
+
+  function sensati(d){
+    return !!(d && Array.isArray(d.pacchetti) && Array.isArray(d.taglie) && d.taglie.length);
+  }
+
+  function daMemoria(){
+    try{
+      const g = JSON.parse(localStorage.getItem(MEMORIA_DATI) || 'null');
+      if(g && sensati(g.dati)) return g.dati;
+    }catch(e){}
+    return null;
+  }
+
+  function inMemoria(d){
+    try{
+      localStorage.setItem(MEMORIA_DATI,
+        JSON.stringify({salvatiIl: new Date().toISOString(), dati: d}));
+    }catch(e){ /* memoria piena o negata: pazienza, non è un errore grave */ }
+  }
+
   async function scarica(){
     const c = window.ROPE_CONFIG || {};
     if(c.URL && c.CHIAVE_PUBBLICA){
+      const stop = new AbortController();
+      const timer = setTimeout(() => stop.abort(), ATTESA_MAX);
       try{
         const r = await fetch(c.URL.replace(/\/$/,'') + '/rest/v1/impostazioni?id=eq.1&select=dati', {
           headers: {'apikey': c.CHIAVE_PUBBLICA, 'Authorization': 'Bearer ' + c.CHIAVE_PUBBLICA},
-          cache: 'no-store'
+          cache: 'no-store', signal: stop.signal
         });
         if(r.ok){
           const righe = await r.json();
-          if(righe.length && righe[0].dati && Object.keys(righe[0].dati).length) return righe[0].dati;
+          if(righe.length && sensati(righe[0].dati)){
+            inMemoria(righe[0].dati);
+            return righe[0].dati;
+          }
         }
-      }catch(e){ /* si continua con la copia locale */ }
+      }catch(e){ /* rete assente o lenta: si continua qui sotto */ }
+      finally{ clearTimeout(timer); }
     }
+
+    const salvati = daMemoria();
+    if(salvati) return salvati;
+
     const r = await fetch('dati/dati.json', {cache:'no-store'});
     if(!r.ok) throw new Error('dati non raggiungibili');
     return r.json();
