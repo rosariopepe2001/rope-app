@@ -165,13 +165,27 @@ window.ROPE_ACCESSO = (function(){
       return risposta({ok: true, prenotazione: righe[0] || null});
     },
 
+    /* Cambia una prenotazione: o solo lo stato ({id, stato}),
+       oppure più campi insieme ({id, campi:{...}}) quando la corregge. */
     async prenotazioniPATCH(corpo){
-      const id = corpo && corpo.id, stato = corpo && corpo.stato;
-      if(!id || !stato) return risposta({errore: "Serve id e uno stato valido"}, 400);
+      const id = corpo && corpo.id;
+      if(!id) return risposta({errore: "Serve l'id della prenotazione"}, 400);
+
+      const AMMESSI = ["stato", "cliente_nome", "cliente_tel", "pacchetto", "pacchetto_id",
+                       "servizio", "livello_id", "taglia", "extra", "totale", "data_app",
+                       "ora", "durata_minuti", "giorni", "auto", "note", "pagamento"];
+      const grezzo = corpo.campi || (corpo.stato ? {stato: corpo.stato} : null);
+      if(!grezzo) return risposta({errore: "Niente da cambiare"}, 400);
+
+      const campi = {};
+      Object.keys(grezzo).forEach(k => { if(AMMESSI.includes(k)) campi[k] = grezzo[k]; });
+      if(!Object.keys(campi).length)
+        return risposta({errore: "Niente da cambiare"}, 400);
+
       const r = await rest("/rest/v1/prenotazioni?id=eq." + encodeURIComponent(id), {
         method: "PATCH",
         headers: {"Prefer": "return=representation"},
-        body: JSON.stringify({stato: stato})
+        body: JSON.stringify(campi)
       });
       if(!r) return scaduta();
       if(r.status === 401) return scaduta();

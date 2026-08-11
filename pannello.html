@@ -605,9 +605,9 @@
 
 <!-- il numero dopo ?v= va cambiato a ogni modifica di questi file:
      costringe telefoni e browser a riscaricarli invece di usare la copia vecchia -->
-<script src="assets/config.js?v=3"></script>
-<script src="assets/app.js?v=3"></script>
-<script src="assets/pannello-api.js?v=3"></script>
+<script src="assets/config.js?v=4"></script>
+<script src="assets/app.js?v=4"></script>
+<script src="assets/pannello-api.js?v=4"></script>
 <script>
 const $ = s => document.querySelector(s);
 let dati = null, modificato = false;
@@ -777,6 +777,12 @@ async function caricaPrenotazioni(){
         `<a class="btn piccolo" href="tel:${esc(t)}">Chiama</a>
          <a class="btn piccolo" href="https://wa.me/${esc(t.replace('+',''))}" target="_blank" rel="noopener">WhatsApp</a>`;
     }
+    const modifica = document.createElement('button');
+    modifica.className = 'btn piccolo';
+    modifica.type = 'button'; modifica.textContent = 'Modifica';
+    modifica.addEventListener('click', () => apriModifica(v));
+    azioni.appendChild(modifica);
+
     [['confermata','Conferma'],['completata','Completata'],['annullata','Annulla']].forEach(([stato,testo]) => {
       if(v.stato === stato) return;
       const b = document.createElement('button');
@@ -1531,20 +1537,79 @@ $("#n-ora").addEventListener('change', () => {
   $("#n-ora-libera-box").hidden = $("#n-ora").value !== '__altro';
 });
 
-$("#nuova-pren").addEventListener('click', () => {
-  if(!dati){ segnaErrore("Aspetta che i dati finiscano di caricare."); return; }
-  if(!dati.pacchetti.length){ segnaErrore("Prima crea almeno un pacchetto."); return; }
+/* Se vale null stiamo creando, altrimenti è la prenotazione che stiamo correggendo. */
+let nInModifica = null;
 
+function nPronta(){
+  if(!dati){ segnaErrore("Aspetta che i dati finiscano di caricare."); return false; }
+  if(!dati.pacchetti.length){ segnaErrore("Prima crea almeno un pacchetto."); return false; }
   ROPE.usaDati(dati);            // usa esattamente i dati che ha davanti
   nErrore(null);
+  return true;
+}
+
+$("#nuova-pren").addEventListener('click', async () => {
+  if(!nPronta()) return;
+  nInModifica = null;
+  $("#dlg-nuova-titolo").textContent = "Prenotazione a mano";
+  $("#n-salva").textContent = "Salva prenotazione";
   ["#n-nome","#n-tel","#n-marca","#n-modello","#n-targa","#n-note","#n-ora-libera"]
     .forEach(s => $(s).value = "");
   $("#n-stato").value = 'confermata';
   nRiempiPacchetti(); nRiempiTaglie(); nRiempiLivelli();
   $("#n-data").value = ROPE.dataISO(new Date());
-  nAggiornaTotale(); nAggiornaOrari();
+  nAggiornaTotale();
   dlgN.showModal();
+  await nAggiornaOrari();
 });
+
+/* Riapre la stessa finestra già compilata, per correggere una prenotazione
+   (sia scritta a mano da lui, sia arrivata dall'app). */
+async function apriModifica(v){
+  if(!nPronta()) return;
+  nInModifica = v;
+  $("#dlg-nuova-titolo").textContent = "Modifica prenotazione";
+  $("#n-salva").textContent = "Salva modifiche";
+
+  nRiempiPacchetti(); nRiempiTaglie();
+  if(v.pacchetto_id && dati.pacchetti.some(p => p.id === v.pacchetto_id))
+    $("#n-pacchetto").value = v.pacchetto_id;
+  nRiempiLivelli();
+  const p = nPacchetto();
+  if(v.livello_id && p && (p.livelli||[]).some(l => l.id === v.livello_id))
+    $("#n-livello").value = v.livello_id;
+
+  if(v.taglia && dati.taglie.some(t => t.id === v.taglia)) $("#n-taglia").value = v.taglia;
+  nRiempiExtra();
+  const scelti = (v.extra || []).map(e => e.id);
+  document.querySelectorAll('#n-extra input').forEach(i => { i.checked = scelti.includes(i.value); });
+
+  $("#n-nome").value    = v.cliente_nome || "";
+  $("#n-tel").value     = v.cliente_tel || "";
+  const auto = v.auto || {};
+  $("#n-marca").value   = auto.marca || "";
+  $("#n-modello").value = auto.modello || "";
+  $("#n-targa").value   = auto.targa || "";
+  $("#n-note").value    = v.note || "";
+  $("#n-stato").value   = v.stato || 'nuova';
+  $("#n-data").value    = v.data_app || ROPE.dataISO(new Date());
+  $("#n-totale").value  = v.totale || "";
+  $("#n-totale-aiuto").textContent = '(era ' + (v.totale || '—') + ')';
+
+  dlgN.showModal();
+  await nAggiornaOrari();
+
+  // rimette l'ora che aveva: se non è tra quelle proposte, la scrive a mano
+  if(v.ora && !$("#n-ora-box").hidden){
+    const c1 = [...$("#n-ora").options].some(o => o.value === v.ora);
+    if(c1) $("#n-ora").value = v.ora;
+    else {
+      $("#n-ora").value = '__altro';
+      $("#n-ora-libera-box").hidden = false;
+      $("#n-ora-libera").value = v.ora;
+    }
+  } else if(v.ora) $("#n-ora-libera").value = v.ora;
+}
 
 let nInCorso = false;
 
@@ -1571,18 +1636,20 @@ async function nSalva(){
     occupato = scelta && scelta.dataset.libero === 'no';
   }
   if(!ora) return nErrore("Scegli o scrivi l'ora.");
+
+  // se sto correggendo e l'orario è rimasto lo stesso, l'"occupato" è lei stessa
+  if(nInModifica && nInModifica.data_app === iso && nInModifica.ora === ora) occupato = false;
+
   if(occupato && !confirm(`Le ${ora} risultano già occupate da un altro lavoro.\n\n`
                           + `La metto lo stesso?`)) return;
 
   const sel = nSelezione();
   const b = $("#n-salva");
+  const modifica = nInModifica;
   nInCorso = true;
   b.disabled = true; b.textContent = 'Salvo…';
   try{
-    const r = await fetch('/api/prenotazioni', {method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        codice: '#RP-' + Math.floor(1000 + Math.random()*9000),
+    const campi = {
         stato: $("#n-stato").value,
         cliente_nome: nome,
         cliente_tel: $("#n-tel").value.trim() || null,
@@ -1604,23 +1671,35 @@ async function nSalva(){
                modello: $("#n-modello").value.trim(),
                targa: $("#n-targa").value.trim().toUpperCase()},
         note: $("#n-note").value.trim() || null,
-        pagamento: 'sede'
-      })});
+        pagamento: modifica ? (modifica.pagamento || 'sede') : 'sede'
+    };
+
+    const r = modifica
+      ? await fetch('/api/prenotazioni', {method:'PATCH',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({id: modifica.id, campi})})
+      : await fetch('/api/prenotazioni', {method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify(Object.assign(
+            {codice: '#RP-' + Math.floor(1000 + Math.random()*9000)}, campi))});
+
     const out = await r.json();
     if(!r.ok || out.errore) throw new Error(out.errore || 'errore');
     dlgN.close();
+    const fatto = modifica ? "Prenotazione aggiornata" : "Prenotazione aggiunta";
     // se stava modificando prezzi o orari, non gli spengo il pulsante Salva
     if(modificato){
       const s = $("#stato");
       s.className = "stato modificato";
-      s.textContent = "Prenotazione aggiunta — hai ancora modifiche da salvare";
-    } else segnaSalvato("Prenotazione aggiunta");
+      s.textContent = fatto + " — hai ancora modifiche da salvare";
+    } else segnaSalvato(fatto);
     caricaPrenotazioni();
   }catch(e){
     nErrore("Non salvata: " + e.message);
   }
   nInCorso = false;
-  b.disabled = false; b.textContent = 'Salva prenotazione';
+  b.disabled = false;
+  b.textContent = modifica ? 'Salva modifiche' : 'Salva prenotazione';
 }
 
 $("#n-salva").addEventListener('click', nSalva);
