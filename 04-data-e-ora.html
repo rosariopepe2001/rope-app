@@ -40,6 +40,9 @@
        color:var(--text);font-family:var(--body);font-size:15px;cursor:pointer;transition:background .2s}
   .ora[aria-pressed="true"]{background:var(--accent);color:var(--bg);border-color:var(--accent);font-weight:600}
   .ora:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .ora:disabled{opacity:.35;cursor:not-allowed;text-decoration:line-through}
+  .niente{grid-column:1/-1;color:var(--text-2);font-size:14px;text-align:center;
+          padding:20px 0;line-height:1.6;margin:0}
 </style>
 </head>
 <body>
@@ -63,9 +66,9 @@
   </div>
   <div class="griglia" id="calendario"></div>
 
-  <div class="sezione">Orari disponibili</div>
+  <div class="sezione" id="titolo-orari">Orari disponibili</div>
   <div class="orari" id="orari"></div>
-  <p class="spiega" id="riconsegna" style="margin-top:16px"></p>
+  <p class="spiega" id="riconsegna" style="margin-top:16px" hidden></p>
 </main>
 
 <div class="barra">
@@ -80,11 +83,10 @@ const $ = s => document.querySelector(s);
 const MESI = ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio',
               'agosto','settembre','ottobre','novembre','dicembre'];
 const GG = ['lun','mar','mer','gio','ven','sab','dom'];
-const ORARI = ['09:00','10:30','12:00','14:00','15:30','17:00'];
 
 const oggi = new Date(); oggi.setHours(0,0,0,0);
 let vista = new Date(oggi.getFullYear(), oggi.getMonth(), 1);
-let scelta = null, ora = null;
+let scelta = null, ora = null, durata = 120, giorni = 1;
 
 (async function(){
   try{ await ROPE.carica(); }catch(e){}
@@ -104,6 +106,8 @@ let scelta = null, ora = null;
         <div class="m">${ROPE.esc(ROPE.tagliaOggetto()?.nome || '')}${nEx ? ' · ' + nEx + ' extra' : ''}</div></div>
        <div class="p">${tot.testo}</div>`;
     $("#tot").textContent = tot.testo;
+    giorni = ROPE.giorniDi(s.pacchettoId, s.livelloId);
+    if(giorni > 1) $("#titolo-orari").textContent = 'Giorno di inizio';
   }
 
   disegnaMese(); disegnaOrari();
@@ -125,22 +129,67 @@ function disegnaMese(){
     const data = new Date(vista.getFullYear(), vista.getMonth(), g);
     const b = document.createElement('button');
     b.className = 'giorno'; b.type = 'button'; b.textContent = g;
-    const domenica = data.getDay() === 0;
-    b.disabled = data < oggi || domenica;
+    const chiuso = ROPE.giornoChiuso(data);
+    b.disabled = data < oggi || chiuso;
     b.setAttribute('aria-pressed', !!(scelta && data.getTime() === scelta.getTime()));
-    if(domenica) b.title = 'Chiuso';
-    b.addEventListener('click', () => { scelta = data; disegnaMese(); controlla(); });
+    if(chiuso) b.title = 'Chiuso';
+    b.addEventListener('click', () => {
+      scelta = data; ora = null; disegnaMese(); disegnaOrari(); controlla();
+    });
     c.appendChild(b);
   }
 }
 
-function disegnaOrari(){
-  const c = $("#orari"); c.innerHTML = "";
-  ORARI.forEach(o => {
+async function disegnaOrari(){
+  const c = $("#orari");
+
+  if(!scelta){
+    c.innerHTML = '<p class="niente">Scegli prima un giorno.</p>';
+    return;
+  }
+
+  /* servizi che occupano più giornate intere: niente orari, solo il giorno */
+  if(giorni > 1){
+    c.innerHTML = '<p class="niente">Controllo…</p>';
+    const ok = await ROPE.giorniLiberi(scelta, giorni);
+    if(ok){
+      ora = 'giornata';
+      c.innerHTML = `<p class="niente">Questo trattamento occupa
+        <b style="color:var(--text)">${giorni} giornate intere</b>.<br>
+        Iniziamo il ${scelta.getDate()} ${MESI[scelta.getMonth()]}, l'auto resta in officina
+        fino alla sera del giorno dopo.</p>`;
+    }else{
+      ora = null;
+      c.innerHTML = '<p class="niente">Non ci sono ' + giorni +
+        ' giornate libere di fila da qui.<br>Prova con un altro giorno.</p>';
+    }
+    controlla();
+    return;
+  }
+
+  c.innerHTML = '<p class="niente">Controllo gli orari liberi…</p>';
+  const s = ROPE.selezione();
+  durata = ROPE.durataPerGiorno(s.pacchettoId, s.livelloId, scelta);
+  const slot = await ROPE.slotLiberi(scelta, durata);
+
+  if(!slot.length){
+    c.innerHTML = '<p class="niente">Nessun orario disponibile in questo giorno.<br>' +
+                  'Prova con un altro.</p>';
+    return;
+  }
+  if(!slot.some(s => s.libero)){
+    c.innerHTML = '<p class="niente">Giornata già piena.<br>Scegli un altro giorno.</p>';
+    return;
+  }
+
+  c.innerHTML = "";
+  slot.forEach(s => {
     const b = document.createElement('button');
-    b.className = 'ora'; b.type = 'button'; b.textContent = o;
-    b.setAttribute('aria-pressed', o === ora);
-    b.addEventListener('click', () => { ora = o; disegnaOrari(); controlla(); });
+    b.className = 'ora'; b.type = 'button'; b.textContent = s.ora;
+    b.disabled = !s.libero;
+    if(!s.libero) b.title = 'Non disponibile';
+    b.setAttribute('aria-pressed', s.ora === ora);
+    b.addEventListener('click', () => { ora = s.ora; disegnaOrari(); controlla(); });
     c.appendChild(b);
   });
 }
@@ -148,13 +197,26 @@ function disegnaOrari(){
 function controlla(){
   const pronto = !!(scelta && ora);
   $("#avanti").disabled = !pronto;
-  if(pronto){
-    const s = ROPE.selezione();
-    const t = s.pacchettoId ? ROPE.trovaLivello(s.pacchettoId, s.livelloId) : null;
-    const durata = t && t.livello.durata ? ' · durata stimata ' + t.livello.durata : '';
+  if(!pronto){ $("#riconsegna").hidden = true; return; }
+
+  if(giorni > 1){
+    const fine = new Date(scelta); fine.setDate(fine.getDate() + giorni - 1);
+    $("#riconsegna").hidden = false;
     $("#riconsegna").textContent =
-      `Appuntamento ${scelta.getDate()} ${MESI[scelta.getMonth()]} alle ${ora}${durata}`;
+      `Dal ${scelta.getDate()} ${MESI[scelta.getMonth()]} al ` +
+      `${fine.getDate()} ${MESI[fine.getMonth()]} — ${giorni} giornate intere`;
+    return;
   }
+
+  const [h,m] = ora.split(':').map(Number);
+  const fine = new Date(scelta); fine.setHours(h, m + durata, 0, 0);
+  const orario = String(fine.getHours()).padStart(2,'0') + ':' +
+                 String(fine.getMinutes()).padStart(2,'0');
+
+  $("#riconsegna").hidden = false;
+  $("#riconsegna").textContent =
+    `${scelta.getDate()} ${MESI[scelta.getMonth()]} dalle ${ora} alle ${orario} ` +
+    `(circa ${Math.floor(durata/60)}h${durata % 60 ? String(durata % 60) : ''})`;
 }
 
 $("#prec").addEventListener('click', () => {
@@ -164,10 +226,12 @@ $("#succ").addEventListener('click', () => {
   vista = new Date(vista.getFullYear(), vista.getMonth()+1, 1); disegnaMese();
 });
 $("#avanti").addEventListener('click', () => {
+  const g = (dati => dati.disponibilita?.giorni?.[String(scelta.getDay()===0?7:scelta.getDay())])(ROPE.dati);
   ROPE.aggiorna({
     data: `${scelta.getDate()} ${MESI[scelta.getMonth()]} ${scelta.getFullYear()}`,
-    dataISO: scelta.toISOString().slice(0,10),
-    ora
+    dataISO: ROPE.dataISO(scelta),
+    ora: giorni > 1 ? (g?.da || '08:30') : ora,
+    giorni
   });
   location.href = '05-la-tua-auto.html';
 });

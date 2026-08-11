@@ -62,7 +62,9 @@
             "xl": 90
           },
           "evidenza": false,
-          "attivo": true
+          "attivo": true,
+          "durataMinuti": 120,
+          "durataGiorni": 1
         },
         {
           "id": "interno-premium",
@@ -77,7 +79,9 @@
             "xl": 180
           },
           "evidenza": false,
-          "attivo": true
+          "attivo": true,
+          "durataMinuti": 180,
+          "durataGiorni": 1
         }
       ],
       "extra": [
@@ -148,7 +152,9 @@
             "xl": 160
           },
           "evidenza": false,
-          "attivo": true
+          "attivo": true,
+          "durataMinuti": 300,
+          "durataGiorni": 1
         },
         {
           "id": "completo-premium",
@@ -163,7 +169,10 @@
             "xl": 300
           },
           "evidenza": true,
-          "attivo": true
+          "attivo": true,
+          "durataMinuti": null,
+          "durataGiorni": 1,
+          "giornataIntera": true
         }
       ],
       "extra": [
@@ -223,7 +232,9 @@
             "xl": 700
           },
           "evidenza": false,
-          "attivo": true
+          "attivo": true,
+          "durataMinuti": null,
+          "durataGiorni": 2
         }
       ],
       "extra": []
@@ -250,11 +261,67 @@
           },
           "suRichiesta": true,
           "evidenza": false,
-          "attivo": true
+          "attivo": true,
+          "durataMinuti": 300,
+          "durataGiorni": 1
         }
       ],
       "extra": []
     }
   ],
-  "galleria": []
+  "galleria": [],
+  "disponibilita": {
+    "giorni": {
+      "1": {
+        "nome": "Lunedì",
+        "aperto": true,
+        "da": "08:30",
+        "a": "18:30"
+      },
+      "2": {
+        "nome": "Martedì",
+        "aperto": true,
+        "da": "08:30",
+        "a": "18:30"
+      },
+      "3": {
+        "nome": "Mercoledì",
+        "aperto": true,
+        "da": "08:30",
+        "a": "18:30"
+      },
+      "4": {
+        "nome": "Giovedì",
+        "aperto": true,
+        "da": "08:30",
+        "a": "18:30"
+      },
+      "5": {
+        "nome": "Venerdì",
+        "aperto": true,
+        "da": "08:30",
+        "a": "18:30"
+      },
+      "6": {
+        "nome": "Sabato",
+        "aperto": true,
+        "da": "08:30",
+        "a": "18:30"
+      },
+      "7": {
+        "nome": "Domenica",
+        "aperto": false,
+        "da": "08:30",
+        "a": "18:30"
+      }
+    },
+    "pausa": {
+      "attiva": true,
+      "da": "13:00",
+      "a": "14:30"
+    },
+    "passo": 30,
+    "preavvisoOre": 12,
+    "chiusure": []
+  }
 }
