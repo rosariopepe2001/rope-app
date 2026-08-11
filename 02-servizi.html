@@ -135,6 +135,8 @@
   <a href="09-profilo.html"><span class="material-symbols-outlined">person</span>Profilo</a>
 </nav>
 
+<script src="assets/config.js"></script>
+<script src="assets/app.js"></script>
 <script>
 const $ = s => document.querySelector(s);
 const esc = t => String(t ?? "").replace(/[&<>"']/g, c =>
@@ -145,8 +147,7 @@ let taglia = localStorage.getItem('rope-taglia') || 's';
 
 async function avvia(){
   try{
-    const r = await fetch('dati/dati.json', {cache:'no-store'});
-    dati = await r.json();
+    dati = await ROPE.carica();
     if(!dati.taglie.some(t => t.id === taglia)) taglia = dati.taglie[0].id;
     disegnaChips(); disegna();
   }catch(e){

@@ -7,11 +7,31 @@ window.ROPE = (function(){
   const esc = t => String(t ?? "").replace(/[&<>"']/g, c =>
     ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-  async function carica(){
-    if(dati) return dati;
+  /* Prezzi, orari e galleria arrivano da Supabase: così il pannello
+     può cambiarli da qualsiasi posto e l'app se ne accorge subito.
+     Se Supabase non risponde, si usa la copia dentro il sito. */
+  async function scarica(){
+    const c = window.ROPE_CONFIG || {};
+    if(c.URL && c.CHIAVE_PUBBLICA){
+      try{
+        const r = await fetch(c.URL.replace(/\/$/,'') + '/rest/v1/impostazioni?id=eq.1&select=dati', {
+          headers: {'apikey': c.CHIAVE_PUBBLICA, 'Authorization': 'Bearer ' + c.CHIAVE_PUBBLICA},
+          cache: 'no-store'
+        });
+        if(r.ok){
+          const righe = await r.json();
+          if(righe.length && righe[0].dati && Object.keys(righe[0].dati).length) return righe[0].dati;
+        }
+      }catch(e){ /* si continua con la copia locale */ }
+    }
     const r = await fetch('dati/dati.json', {cache:'no-store'});
     if(!r.ok) throw new Error('dati non raggiungibili');
-    dati = await r.json();
+    return r.json();
+  }
+
+  async function carica(){
+    if(dati) return dati;
+    dati = await scarica();
     dati.taglie = dati.taglie || [];
     dati.pacchetti = dati.pacchetti || [];
     dati.galleria = dati.galleria || [];

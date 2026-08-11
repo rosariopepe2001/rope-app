@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>ROPE — Pannello di gestione</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A0A0B; --surface:#16161A; --surface-2:#1D1D22; --border:#26262C;
+    --text:#F2F2F4; --text-2:#A0A0A8; --accent:#D4D7DC; --danger:#E8807A; --ok:#7FBF9A;
+    --headline:'Sora',-apple-system,BlinkMacSystemFont,sans-serif;
+    --body:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--body);
+       font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;
+       padding-bottom:calc(96px + env(safe-area-inset-bottom))}
+
+  header{position:sticky;top:0;z-index:30;background:var(--bg);
+         border-bottom:1px solid var(--border);padding:14px 20px;
+         display:flex;align-items:center;gap:14px}
+  header img{height:24px;width:auto}
+  header .t{font-family:var(--headline);font-size:11px;letter-spacing:.18em;
+            text-transform:uppercase;color:var(--text-2);font-weight:600}
+
+  nav{position:sticky;top:53px;z-index:29;background:var(--bg);
+      border-bottom:1px solid var(--border);display:flex;overflow-x:auto}
+  nav button{flex:0 0 auto;min-height:48px;padding:0 11px;background:none;border:none;
+             border-bottom:2px solid transparent;color:var(--text-2);
+             font-family:var(--headline);font-size:12px;font-weight:600;
+             letter-spacing:.03em;text-transform:uppercase;cursor:pointer;
+             transition:color .2s,border-color .2s;white-space:nowrap}
+  nav button[aria-selected="true"]{color:var(--text);border-bottom-color:var(--accent)}
+
+  main{padding:20px;max-width:760px;margin:0 auto}
+  h2{font-family:var(--headline);font-size:22px;font-weight:700;margin:0 0 4px}
+  .sub{color:var(--text-2);font-size:14px;margin:0 0 20px}
+
+  /* pacchetto */
+  .pacchetto{border:1px solid var(--border);border-radius:20px;background:var(--surface);
+             padding:18px;margin-bottom:18px}
+  .pacchetto > .cima{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .pacchetto h3{font-family:var(--headline);font-size:18px;margin:0;font-weight:700}
+  .pacchetto .st{color:var(--text-2);font-size:13px;margin-top:2px}
+  .pacchetto .nota{font-size:13px;color:var(--accent);margin-top:10px;
+                   border-left:2px solid var(--border);padding-left:12px;line-height:1.45}
+  .gruppo{font-family:var(--headline);font-size:11px;letter-spacing:.18em;
+          text-transform:uppercase;color:var(--text-2);margin:20px 0 10px;font-weight:600}
+
+  .riga{background:var(--surface-2);border:1px solid var(--border);border-radius:14px;
+        padding:14px;display:flex;align-items:center;gap:12px;text-align:left;
+        width:100%;cursor:pointer;color:inherit;font:inherit;margin-bottom:10px;
+        transition:border-color .2s}
+  .riga:hover{border-color:var(--accent)}
+  .riga .corpo{flex:1 1 auto;min-width:0}
+  .riga .nome{display:block;font-weight:600;font-size:16px;line-height:1.3}
+  .riga .meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px;
+              font-size:13px;color:var(--text-2);margin-top:6px}
+  .riga .prezzi{flex:0 0 auto;text-align:right;font-family:var(--headline);
+                font-weight:700;font-size:15px;color:var(--accent);white-space:nowrap}
+  .riga .prezzi .tg{font-family:var(--body);font-weight:500;font-size:11px;
+                    color:var(--text-2);margin-right:3px}
+  .riga .prezzi.vuoto{color:var(--danger);font-size:12px;font-weight:600;
+                      white-space:normal;max-width:78px;line-height:1.3}
+  @media (max-width:520px){
+    .riga{flex-wrap:wrap}
+    .riga .prezzi{width:100%;text-align:left;margin-top:10px;
+                  padding-top:10px;border-top:1px solid var(--border);white-space:normal}
+    .riga .prezzi.vuoto{max-width:none}
+  }
+  .tag{display:inline-block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+       border:1px solid var(--border);border-radius:99px;padding:3px 9px;color:var(--text-2)}
+  .tag.on{border-color:var(--accent);color:var(--accent)}
+  .tag.off{border-color:var(--danger);color:var(--danger)}
+
+  label{display:block;font-size:13px;color:var(--text-2);margin:16px 0 6px;font-weight:500}
+  input[type=text],input[type=number],textarea,select{
+    width:100%;min-height:48px;background:var(--surface);color:var(--text);
+    border:1px solid var(--border);border-radius:12px;padding:12px 14px;
+    font-family:var(--body);font-size:16px}
+  textarea{min-height:150px;resize:vertical;line-height:1.55}
+  input:focus-visible,textarea:focus-visible,select:focus-visible,
+  button:focus-visible,.riga:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  /* griglia prezzi per taglia */
+  .taglie{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:8px}
+  @media (min-width:560px){.taglie{grid-template-columns:repeat(4,1fr)}}
+  .taglie .cella label{margin:0 0 6px}
+  .taglie .euro{position:relative}
+  .taglie .euro span{position:absolute;left:14px;top:50%;transform:translateY(-50%);
+                     color:var(--text-2);pointer-events:none}
+  .taglie .euro input{padding-left:32px}
+
+  .interruttore{display:flex;align-items:center;justify-content:space-between;
+                gap:16px;min-height:52px;padding:8px 0;cursor:pointer}
+  .interruttore span{font-size:15px}
+  .interruttore small{display:block;color:var(--text-2);font-size:13px}
+  .binario{width:52px;height:32px;border-radius:99px;background:var(--surface-2);
+           border:1px solid var(--border);position:relative;flex:0 0 auto;transition:background .2s}
+  .binario::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;
+                  border-radius:50%;background:var(--text-2);transition:transform .2s,background .2s}
+  input[type=checkbox]{position:absolute;opacity:0;width:0;height:0}
+  input[type=checkbox]:checked + .binario{background:var(--accent);border-color:var(--accent)}
+  input[type=checkbox]:checked + .binario::after{transform:translateX(20px);background:var(--bg)}
+  input[type=checkbox]:focus-visible + .binario{outline:2px solid var(--accent);outline-offset:2px}
+
+  .btn{min-height:52px;border-radius:99px;border:1px solid var(--border);
+       background:transparent;color:var(--text);font-family:var(--headline);
+       font-size:14px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+       padding:0 24px;cursor:pointer;transition:border-color .2s,background .2s,color .2s;
+       display:inline-flex;align-items:center;justify-content:center;gap:8px}
+  .btn:hover{border-color:var(--accent)}
+  .btn.primario{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+  .btn.primario:hover{background:#E6E9ED}
+  .btn.pericolo{color:var(--danger);border-color:rgba(232,128,122,.4)}
+  .btn.pericolo:hover{border-color:var(--danger)}
+  .btn.pieno{width:100%}
+  .btn.piccolo{min-height:44px;font-size:12px;padding:0 16px}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+
+  .foto{position:relative;border:1px dashed var(--border);border-radius:16px;
+        min-height:120px;display:flex;align-items:center;justify-content:center;
+        overflow:hidden;background:var(--surface);cursor:pointer;text-align:center;padding:16px}
+  .foto:hover{border-color:var(--accent)}
+  .foto img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .foto .etichetta{position:relative;color:var(--text-2);font-size:14px}
+  .foto input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+
+  .barra{position:fixed;left:0;right:0;bottom:0;z-index:40;background:rgba(10,10,11,.94);
+         backdrop-filter:blur(12px);border-top:1px solid var(--border);
+         padding:12px 20px calc(12px + env(safe-area-inset-bottom));
+         display:flex;align-items:center;gap:12px;max-width:760px;margin:0 auto}
+  .barra .stato{flex:1 1 auto;min-width:0;font-size:12px;color:var(--text-2);line-height:1.35}
+  .barra .btn{flex:0 0 auto;padding:0 18px}
+  .barra .stato.modificato{color:var(--accent)}
+  .barra .stato.salvato{color:var(--ok)}
+  .barra .stato.errore{color:var(--danger)}
+
+  dialog{border:none;padding:0;background:var(--bg);color:var(--text);width:100%;
+         max-width:600px;border-radius:20px;margin:auto}
+  dialog::backdrop{background:rgba(0,0,0,.75)}
+  .testata{display:flex;align-items:center;justify-content:space-between;gap:12px;
+           padding:20px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:2}
+  .testata h3{font-family:var(--headline);font-size:17px;margin:0}
+  .contenuto{padding:0 20px 20px}
+  .azioni{display:flex;gap:10px;padding:20px;border-top:1px solid var(--border);
+          position:sticky;bottom:0;background:var(--bg)}
+  .azioni .btn{flex:1}
+  .icona{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;
+         stroke-linecap:round;stroke-linejoin:round}
+  .vuoto{text-align:center;color:var(--text-2);padding:28px 20px;font-size:14px}
+
+  /* accesso */
+  #accesso{position:fixed;inset:0;z-index:100;background:var(--bg);
+           display:flex;align-items:center;justify-content:center;padding:24px}
+  #accesso .riquadro{width:100%;max-width:380px;text-align:center}
+  #accesso img{width:150px;height:auto;margin:0 auto 30px;display:block}
+  #accesso h1{font-family:var(--headline);font-size:19px;font-weight:600;
+              letter-spacing:.14em;text-transform:uppercase;margin:0 0 6px}
+  #accesso p.sub{color:var(--text-2);font-size:14px;margin:0 0 26px}
+  #accesso label{display:block;text-align:left;font-size:13px;color:var(--text-2);
+                 margin:0 0 6px;font-weight:500}
+  #accesso input{width:100%;margin:0 0 16px}
+  #accesso .errore{color:var(--danger);font-size:14px;margin:0 0 14px;line-height:1.5}
+  .esci{background:none;border:0;color:var(--text-2);font-family:var(--body);
+        font-size:13px;padding:8px;cursor:pointer;margin-left:auto}
+  .esci:hover{color:var(--text)}
+
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<div id="accesso" hidden>
+  <form class="riquadro" id="accesso-form">
+    <img src="assets/rope-logo.png" alt="ROPE Car Detailing">
+    <h1>Pannello di gestione</h1>
+    <p class="sub">Entra con la tua email e la tua password.</p>
+
+    <label for="ac-email">Email</label>
+    <input type="email" id="ac-email" autocomplete="username" required
+           inputmode="email" spellcheck="false" placeholder="la tua email">
+
+    <label for="ac-password">Password</label>
+    <input type="password" id="ac-password" autocomplete="current-password" required
+           placeholder="la tua password">
+
+    <p class="errore" id="ac-errore" hidden></p>
+    <button class="btn primario pieno" id="ac-entra" type="submit">Entra</button>
+  </form>
+</div>
+
+<header>
+  <img src="assets/rope-logo.png" alt="ROPE Car Detailing">
+  <span class="t">Pannello di gestione</span>
+  <button type="button" class="esci" id="esci" hidden>Esci</button>
+</header>
+
+<nav role="tablist" aria-label="Sezioni">
+  <button role="tab" id="tab-prenotazioni" aria-selected="true" aria-controls="p-prenotazioni">Prenotazioni</button>
+  <button role="tab" id="tab-pacchetti" aria-selected="false" aria-controls="p-pacchetti">Pacchetti</button>
+  <button role="tab" id="tab-taglie"    aria-selected="false" aria-controls="p-taglie">Taglie</button>
+  <button role="tab" id="tab-orari"     aria-selected="false" aria-controls="p-orari">Orari</button>
+  <button role="tab" id="tab-avvisi"    aria-selected="false" aria-controls="p-avvisi">Avvisi</button>
+  <button role="tab" id="tab-galleria"  aria-selected="false" aria-controls="p-galleria">Galleria</button>
+  <button role="tab" id="tab-info"      aria-selected="false" aria-controls="p-info">Info</button>
+</nav>
+
+<main>
+  <section id="p-prenotazioni" role="tabpanel" aria-labelledby="tab-prenotazioni">
+    <h2>Prenotazioni</h2>
+    <p class="sub">Le richieste che arrivano dall'app.</p>
+    <div id="lista-prenotazioni"><p class="vuoto">Carico…</p></div>
+    <button class="btn pieno" id="ricarica-pren" style="margin-top:8px">Aggiorna</button>
+  </section>
+
+  <section id="p-pacchetti" role="tabpanel" aria-labelledby="tab-pacchetti" hidden>
+    <h2>Pacchetti e prezzi</h2>
+    <p class="sub">Ogni prezzo è per taglia dell'auto. Tocca una riga per modificarla.</p>
+    <div id="lista-pacchetti"></div>
+    <button class="btn pieno" id="nuovo-pacchetto" style="margin-top:8px">
+      <svg class="icona" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      Aggiungi pacchetto
+    </button>
+  </section>
+
+  <section id="p-taglie" role="tabpanel" aria-labelledby="tab-taglie" hidden>
+    <h2>Taglie auto</h2>
+    <p class="sub">Scrivi quali auto rientrano in ogni taglia: il cliente deve capire subito la sua.</p>
+    <div id="lista-taglie"></div>
+  </section>
+
+  <section id="p-orari" role="tabpanel" aria-labelledby="tab-orari" hidden>
+    <h2>Quando sei aperto</h2>
+    <p class="sub">L'app propone solo gli orari liberi in cui puoi davvero lavorare.</p>
+
+    <div class="pacchetto">
+      <h3>Giorni e orari</h3>
+      <div id="lista-giorni" style="margin-top:8px"></div>
+    </div>
+
+    <div class="pacchetto">
+      <h3>Pausa pranzo</h3>
+      <label class="interruttore" for="or-pausa-attiva">
+        <span>Blocca la pausa <small>Nessun appuntamento in quella fascia</small></span>
+        <input type="checkbox" id="or-pausa-attiva"><span class="binario" aria-hidden="true"></span>
+      </label>
+      <div class="taglie" style="grid-template-columns:1fr 1fr">
+        <div><label for="or-pausa-da">Dalle</label><input type="time" id="or-pausa-da"></div>
+        <div><label for="or-pausa-a">Alle</label><input type="time" id="or-pausa-a"></div>
+      </div>
+    </div>
+
+    <div class="pacchetto">
+      <h3>Regole</h3>
+      <label for="or-passo">Ogni quanto proporre un orario</label>
+      <select id="or-passo">
+        <option value="15">Ogni 15 minuti</option>
+        <option value="30">Ogni 30 minuti</option>
+        <option value="60">Ogni ora</option>
+      </select>
+      <label for="or-preavviso">Preavviso minimo</label>
+      <select id="or-preavviso">
+        <option value="0">Nessuno</option>
+        <option value="2">2 ore</option>
+        <option value="12">12 ore</option>
+        <option value="24">1 giorno</option>
+        <option value="48">2 giorni</option>
+      </select>
+    </div>
+
+    <div class="pacchetto">
+      <h3>Chiusure e ferie</h3>
+      <p style="color:var(--text-2);font-size:14px;margin:8px 0 0">
+        Giorni singoli in cui non ricevi nessuno.</p>
+      <div id="lista-chiusure" style="margin-top:12px"></div>
+      <div class="taglie" style="grid-template-columns:1fr auto;align-items:end">
+        <div><label for="or-nuova-chiusura">Aggiungi un giorno</label>
+          <input type="date" id="or-nuova-chiusura"></div>
+        <button class="btn piccolo" id="or-aggiungi-chiusura" style="margin-bottom:1px">Aggiungi</button>
+      </div>
+    </div>
+
+    <div class="pacchetto" id="or-durate">
+      <h3>Quanto dura ogni servizio</h3>
+      <p style="color:var(--text-2);font-size:14px;margin:8px 0 0">
+        Serve per non farti prenotare due lavori sovrapposti.
+        Senza durata l'app calcola 2 ore.</p>
+      <div id="lista-durate" style="margin-top:8px"></div>
+    </div>
+  </section>
+
+  <section id="p-avvisi" role="tabpanel" aria-labelledby="tab-avvisi" hidden>
+    <h2>Avviso su Telegram</h2>
+    <p class="sub">Ti arriva una notifica sul telefono a ogni nuova prenotazione.</p>
+
+    <div class="pacchetto">
+      <h3>1. Crea il bot</h3>
+      <p style="color:var(--text-2);font-size:14px;line-height:1.65;margin:10px 0 0">
+        Apri Telegram e cerca <b>@BotFather</b> (quello con la spunta blu).<br>
+        Scrivigli <b>/newbot</b> e segui le due domande:<br>
+        &bull; nome del bot: <b>ROPE Prenotazioni</b><br>
+        &bull; nome utente: qualcosa che finisce per <b>bot</b>, es. <b>rope_prenotazioni_bot</b><br><br>
+        Alla fine BotFather ti manda un codice lungo tipo
+        <code style="color:var(--accent)">8123456789:AAF…</code>: è il token.
+      </p>
+      <label for="tg-token">Incolla qui il token</label>
+      <input type="text" id="tg-token" placeholder="123456789:AA…" autocomplete="off" spellcheck="false">
+      <button class="btn pieno" id="tg-verifica" style="margin-top:12px">Verifica il token</button>
+      <p id="tg-esito1" style="font-size:14px;margin:12px 0 0" hidden></p>
+    </div>
+
+    <div class="pacchetto" id="tg-passo2" hidden>
+      <h3>2. Fatti riconoscere</h3>
+      <p style="color:var(--text-2);font-size:14px;line-height:1.65;margin:10px 0 0">
+        Su Telegram apri il tuo bot <b id="tg-nome-bot"></b> e premi <b>Avvia</b>
+        (o scrivigli <b>ciao</b>). Serve perché il bot possa scriverti.
+      </p>
+      <button class="btn pieno" id="tg-collega" style="margin-top:12px">Ho scritto al bot, collegami</button>
+      <p id="tg-esito2" style="font-size:14px;margin:12px 0 0" hidden></p>
+    </div>
+
+    <div class="pacchetto" id="tg-passo3" hidden>
+      <h3>3. Attiva l'avviso</h3>
+      <p style="color:var(--text-2);font-size:14px;line-height:1.65;margin:10px 0 0">
+        Ultimo passaggio: copia il testo qui sotto e incollalo in Supabase,
+        in <b>SQL Editor &gt; New query</b>, poi premi <b>Run</b>.
+      </p>
+      <textarea id="tg-sql" readonly style="margin-top:12px;min-height:190px;
+        font-family:ui-monospace,Menlo,monospace;font-size:12px;line-height:1.5"></textarea>
+      <button class="btn primario pieno" id="tg-copia" style="margin-top:12px">Copia il testo</button>
+      <p class="nota" style="margin-top:14px">
+        <span class="material-symbols-outlined">lock</span>
+        <span>Contiene il token del tuo bot: incollalo solo dentro Supabase, non altrove.</span></p>
+    </div>
+  </section>
+
+  <section id="p-galleria" role="tabpanel" aria-labelledby="tab-galleria" hidden>
+    <h2>I nostri lavori</h2>
+    <p class="sub">Le foto prima/dopo che i clienti vedono nella galleria.</p>
+    <div id="lista-galleria"></div>
+    <button class="btn pieno" id="nuovo-lavoro" style="margin-top:8px">
+      <svg class="icona" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      Aggiungi lavoro
+    </button>
+  </section>
+
+  <section id="p-info" role="tabpanel" aria-labelledby="tab-info" hidden>
+    <h2>Informazioni</h2>
+    <p class="sub">Dati dello studio e messaggio promozionale in home.</p>
+
+    <label for="f-indirizzo">Indirizzo</label>
+    <input type="text" id="f-indirizzo" placeholder="Via Roma 12, Milano">
+
+    <label for="f-telefono">Telefono</label>
+    <input type="text" id="f-telefono" inputmode="tel">
+
+    <label for="f-whatsapp">Numero WhatsApp</label>
+    <input type="text" id="f-whatsapp" inputmode="tel">
+
+    <label for="f-orari">Orari di apertura</label>
+    <input type="text" id="f-orari">
+
+    <label class="interruttore" for="f-promo-attiva" style="margin-top:24px">
+      <span>Mostra promozione in home
+        <small>Compare una fascia in evidenza nell'app</small></span>
+      <input type="checkbox" id="f-promo-attiva"><span class="binario" aria-hidden="true"></span>
+    </label>
+
+    <label for="f-promo-testo">Testo della promozione</label>
+    <input type="text" id="f-promo-testo" placeholder="Febbraio: ceramica -20%">
+  </section>
+</main>
+
+<div class="barra">
+  <span class="stato" id="stato" role="status" aria-live="polite">Caricamento…</span>
+  <button class="btn" id="pubblica">Pubblica</button>
+  <button class="btn primario" id="salva" disabled>Salva</button>
+</div>
+
+<!-- livello / extra -->
+<dialog id="dlg-voce" aria-labelledby="dlg-voce-titolo">
+  <form method="dialog">
+    <div class="testata">
+      <h3 id="dlg-voce-titolo">Voce</h3>
+      <button class="btn piccolo" value="annulla" aria-label="Chiudi senza salvare">Chiudi</button>
+    </div>
+    <div class="contenuto">
+      <label for="v-nome">Nome <small id="v-nome-aiuto"></small></label>
+      <input type="text" id="v-nome">
+
+      <div id="v-solo-livello">
+        <label for="v-titolo">Titolo mostrato al cliente</label>
+        <input type="text" id="v-titolo" placeholder="Pulizia Profonda Interni">
+
+        <label for="v-descrizione">Descrizione</label>
+        <textarea id="v-descrizione"></textarea>
+
+        <label for="v-durata">Durata</label>
+        <input type="text" id="v-durata" placeholder="2h - 3h">
+      </div>
+
+      <label class="interruttore" for="v-su-richiesta" style="margin-top:20px">
+        <span>Prezzo su richiesta
+          <small>Nell'app compare "Su richiesta" al posto delle cifre</small></span>
+        <input type="checkbox" id="v-su-richiesta"><span class="binario" aria-hidden="true"></span>
+      </label>
+
+      <div id="v-prezzi-box">
+        <label>Prezzi per taglia</label>
+        <div class="taglie" id="v-taglie"></div>
+      </div>
+
+      <div id="v-evidenza-box">
+        <label class="interruttore" for="v-evidenza" style="margin-top:20px">
+          <span>Più richiesto <small>Badge in evidenza nell'app</small></span>
+          <input type="checkbox" id="v-evidenza"><span class="binario" aria-hidden="true"></span>
+        </label>
+      </div>
+
+      <label class="interruttore" for="v-attivo">
+        <span>Visibile ai clienti <small>Se spento sparisce dall'app</small></span>
+        <input type="checkbox" id="v-attivo"><span class="binario" aria-hidden="true"></span>
+      </label>
+    </div>
+    <div class="azioni">
+      <button class="btn pericolo" value="elimina">Elimina</button>
+      <button class="btn primario" value="ok" id="v-conferma">Fatto</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- pacchetto -->
+<dialog id="dlg-pacchetto" aria-labelledby="dlg-pacchetto-titolo">
+  <form method="dialog">
+    <div class="testata">
+      <h3 id="dlg-pacchetto-titolo">Pacchetto</h3>
+      <button class="btn piccolo" value="annulla" aria-label="Chiudi senza salvare">Chiudi</button>
+    </div>
+    <div class="contenuto">
+      <label for="p-nome">Nome del pacchetto</label>
+      <input type="text" id="p-nome">
+
+      <label for="p-sottotitolo">Sottotitolo</label>
+      <input type="text" id="p-sottotitolo" placeholder="La cura dell'abitacolo">
+
+      <label for="p-nota">Nota in evidenza <small>(condizioni, avvisi)</small></label>
+      <textarea id="p-nota" style="min-height:90px"></textarea>
+
+      <label for="p-foto">Foto del pacchetto</label>
+      <div class="foto">
+        <img id="p-foto-anteprima" alt="" hidden>
+        <span class="etichetta">Tocca per scegliere una foto</span>
+        <input type="file" id="p-foto" accept="image/*" aria-label="Foto del pacchetto">
+      </div>
+
+      <label class="interruttore" for="p-attivo" style="margin-top:20px">
+        <span>Visibile ai clienti</span>
+        <input type="checkbox" id="p-attivo"><span class="binario" aria-hidden="true"></span>
+      </label>
+    </div>
+    <div class="azioni">
+      <button class="btn pericolo" value="elimina">Elimina</button>
+      <button class="btn primario" value="ok">Fatto</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- lavoro galleria -->
+<dialog id="dlg-lavoro" aria-labelledby="dlg-lavoro-titolo">
+  <form method="dialog">
+    <div class="testata">
+      <h3 id="dlg-lavoro-titolo">Lavoro</h3>
+      <button class="btn piccolo" value="annulla" aria-label="Chiudi senza salvare">Chiudi</button>
+    </div>
+    <div class="contenuto">
+      <label for="l-auto">Auto</label>
+      <input type="text" id="l-auto" placeholder="Porsche 911">
+      <label for="l-servizio">Servizio eseguito</label>
+      <input type="text" id="l-servizio" placeholder="Trattamento Showroom">
+      <label for="l-nota">Nota breve</label>
+      <input type="text" id="l-nota" placeholder="Rimossi graffi profondi sul cofano">
+      <label for="l-prima">Foto PRIMA</label>
+      <div class="foto">
+        <img id="l-prima-anteprima" alt="" hidden>
+        <span class="etichetta">Tocca per scegliere</span>
+        <input type="file" id="l-prima" accept="image/*" aria-label="Foto prima dell'intervento">
+      </div>
+      <label for="l-dopo">Foto DOPO</label>
+      <div class="foto">
+        <img id="l-dopo-anteprima" alt="" hidden>
+        <span class="etichetta">Tocca per scegliere</span>
+        <input type="file" id="l-dopo" accept="image/*" aria-label="Foto dopo l'intervento">
+      </div>
+    </div>
+    <div class="azioni">
+      <button class="btn pericolo" value="elimina">Elimina</button>
+      <button class="btn primario" value="ok">Fatto</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="assets/config.js"></script>
+<script src="assets/pannello-api.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+let dati = null, modificato = false;
+let voceCorrente = null, pacchettoDiVoce = null, tipoVoce = null;
+let pacchettoCorrente = null, lavoroCorrente = null;
+
+const esc = t => String(t ?? "").replace(/[&<>"']/g, c =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---------- stato ---------- */
+function segnaModificato(){
+  modificato = true; $("#salva").disabled = false;
+  const s = $("#stato"); s.className = "stato modificato"; s.textContent = "Modifiche non salvate";
+}
+function segnaSalvato(msg="Tutto salvato"){
+  modificato = false; $("#salva").disabled = true;
+  const s = $("#stato"); s.className = "stato salvato"; s.textContent = msg;
+}
+function segnaErrore(msg){
+  const s = $("#stato"); s.className = "stato errore"; s.textContent = msg;
+}
+
+document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('nav button').forEach(x => x.setAttribute('aria-selected', x === b));
+  document.querySelectorAll('main section').forEach(s => s.hidden = true);
+  $("#" + b.getAttribute('aria-controls')).hidden = false;
+}));
+
+/* ---------- caricamento ---------- */
+async function carica(){
+  try{
+    const r = await fetch('/api/dati');
+    if(!r.ok) throw new Error('risposta ' + r.status);
+    dati = await r.json();
+    dati.taglie    = dati.taglie    || [];
+    dati.pacchetti = dati.pacchetti || [];
+    dati.galleria  = dati.galleria  || [];
+    disegnaPacchetti(); disegnaTaglie(); disegnaGalleria(); riempiInfo();
+    disegnaOrari(); caricaPrenotazioni();
+    segnaSalvato("Nessuna modifica");
+  }catch(e){
+    segnaErrore("Non riesco a leggere i dati: " + (e.message || "controlla il collegamento"));
+  }
+}
+
+/* ---------- riepilogo prezzi ---------- */
+function riepilogoPrezzi(prezzi, suRichiesta){
+  if(suRichiesta) return '<span class="prezzi">Su richiesta</span>';
+  const v = dati.taglie.map(t => prezzi ? prezzi[t.id] : null);
+  if(v.every(x => x === null || x === undefined || x === ""))
+    return '<span class="prezzi vuoto">prezzi da mettere</span>';
+  const testo = dati.taglie.map(t => {
+    const x = prezzi ? prezzi[t.id] : null;
+    const val = (x === null || x === undefined || x === "") ? '—' : '€'+x;
+    return `<span class="tg">${esc(t.id.toUpperCase())}</span>${val}`;
+  }).join('&nbsp; ');
+  return `<span class="prezzi">${testo}</span>`;
+}
+
+/* ---------- prenotazioni in arrivo ---------- */
+const STATI = {
+  nuova:      {n:'Nuova',      c:'on'},
+  confermata: {n:'Confermata', c:''},
+  completata: {n:'Completata', c:''},
+  annullata:  {n:'Annullata',  c:'off'}
+};
+
+async function caricaPrenotazioni(){
+  const c = $("#lista-prenotazioni");
+  c.innerHTML = '<p class="vuoto">Carico…</p>';
+  let out;
+  try{
+    const r = await fetch('/api/prenotazioni');
+    out = await r.json();
+    if(out.errore) throw new Error(out.errore);
+  }catch(e){
+    c.innerHTML = `<p class="vuoto">Non riesco a leggere le prenotazioni.<br>
+      <span style="font-size:13px">${esc(e.message)}</span></p>`;
+    return;
+  }
+
+  if(!out.collegato){
+    c.innerHTML = `<div class="pacchetto">
+      <h3>Collega le prenotazioni</h3>
+      <p style="color:var(--text-2);font-size:14px;margin:10px 0 0;line-height:1.6">
+        Finché non colleghi Supabase, le prenotazioni restano sul telefono di chi prenota
+        e non arrivano qui. Incolla i tre valori e faccio tutto io.</p>
+
+      <label for="cg-url">Indirizzo del progetto (Project URL)</label>
+      <input type="text" id="cg-url" placeholder="https://xxxxxxxx.supabase.co"
+             autocomplete="off" spellcheck="false">
+
+      <label for="cg-pub">Chiave pubblica <small>(anon public / publishable)</small></label>
+      <input type="text" id="cg-pub" placeholder="incolla qui" autocomplete="off" spellcheck="false">
+
+      <label for="cg-ris">Chiave riservata <small>(service_role / secret)</small></label>
+      <input type="text" id="cg-ris" placeholder="incolla qui" autocomplete="off" spellcheck="false">
+
+      <p class="nota" style="margin-top:14px">La chiave riservata resta su questo Mac.
+        Non finisce nell'app e non la vede nessun altro.</p>
+
+      <p id="cg-errore" style="color:var(--danger);font-size:13px;margin:12px 0 0" hidden></p>
+      <button class="btn primario pieno" id="cg-salva" style="margin-top:14px">Collega</button>
+    </div>`;
+
+    $("#cg-salva").addEventListener('click', async () => {
+      const b = $("#cg-salva"), err = $("#cg-errore");
+      err.hidden = true; b.disabled = true; b.textContent = 'Collego…';
+      try{
+        const r = await fetch('/api/collegamento', {method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({
+            url: $("#cg-url").value,
+            chiave_pubblica: $("#cg-pub").value,
+            chiave_riservata: $("#cg-ris").value
+          })});
+        const o = await r.json();
+        if(o.errore) throw new Error(o.errore);
+        caricaPrenotazioni();
+      }catch(e){
+        err.textContent = e.message; err.hidden = false;
+        b.disabled = false; b.textContent = 'Collega';
+      }
+    });
+    return;
+  }
+
+  const p = out.prenotazioni || [];
+  if(!p.length){
+    c.innerHTML = '<p class="vuoto">Nessuna prenotazione ancora.<br>' +
+      '<span style="font-size:13px">Arriveranno qui appena qualcuno prenota dall\'app.</span></p>';
+    return;
+  }
+
+  c.innerHTML = "";
+  p.forEach(v => {
+    const st = STATI[v.stato] || STATI.nuova;
+    const auto = v.auto || {};
+    const extra = (v.extra||[]).map(e => e.nome).filter(Boolean);
+    const box = document.createElement('div');
+    box.className = 'pacchetto';
+    box.innerHTML = `
+      <div class="cima">
+        <div><h3>${esc(v.cliente_nome || 'Cliente')}</h3>
+          <div class="st">${esc(v.servizio || '')}${v.taglia ? ' · ' + esc(String(v.taglia).toUpperCase()) : ''}</div></div>
+        <span class="tag ${st.c}">${st.n}</span>
+      </div>
+      <div class="riga" style="cursor:default;margin-top:14px">
+        <span class="corpo">
+          <span class="nome">${esc(v.data_app || 'Data da definire')}${v.ora ? ' · ' + esc(v.ora) : ''}</span>
+          <span class="meta">
+            ${(auto.marca || auto.modello) ? '<span class="tag">' + esc([auto.marca,auto.modello].filter(Boolean).join(' ')) + '</span>' : ''}
+            ${auto.targa ? '<span class="tag">' + esc(auto.targa) + '</span>' : ''}
+          </span>
+        </span>
+        <span class="prezzi">${esc(v.totale || '')}</span>
+      </div>
+      ${extra.length ? `<div class="nota">Extra: ${esc(extra.join(', '))}</div>` : ''}
+      ${v.note ? `<div class="nota">Note: ${esc(v.note)}</div>` : ''}
+      <div class="gruppo">Contatta e aggiorna</div>`;
+
+    const azioni = document.createElement('div');
+    azioni.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap';
+    if(v.cliente_tel){
+      const t = String(v.cliente_tel).replace(/[^0-9+]/g,'');
+      azioni.innerHTML =
+        `<a class="btn piccolo" href="tel:${esc(t)}">Chiama</a>
+         <a class="btn piccolo" href="https://wa.me/${esc(t.replace('+',''))}" target="_blank" rel="noopener">WhatsApp</a>`;
+    }
+    [['confermata','Conferma'],['completata','Completata'],['annullata','Annulla']].forEach(([stato,testo]) => {
+      if(v.stato === stato) return;
+      const b = document.createElement('button');
+      b.className = 'btn piccolo' + (stato === 'annullata' ? ' pericolo' : '');
+      b.type = 'button'; b.textContent = testo;
+      b.addEventListener('click', async () => {
+        b.disabled = true;
+        try{
+          const r = await fetch('/api/prenotazioni', {method:'PATCH',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({id:v.id, stato})});
+          const o = await r.json();
+          if(o.errore) throw new Error(o.errore);
+          caricaPrenotazioni();
+        }catch(e){ segnaErrore('Non aggiornata: ' + e.message); b.disabled = false; }
+      });
+      azioni.appendChild(b);
+    });
+
+    const elimina = document.createElement('button');
+    elimina.className = 'btn piccolo pericolo';
+    elimina.type = 'button'; elimina.textContent = 'Elimina';
+    elimina.addEventListener('click', async () => {
+      if(!confirm(`Eliminare definitivamente la prenotazione di ${v.cliente_nome || 'questo cliente'}? Non si può annullare.`)) return;
+      elimina.disabled = true;
+      try{
+        const r = await fetch('/api/prenotazioni', {method:'DELETE',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({id:v.id})});
+        const o = await r.json();
+        if(o.errore) throw new Error(o.errore);
+        caricaPrenotazioni();
+      }catch(e){ segnaErrore('Non eliminata: ' + e.message); elimina.disabled = false; }
+    });
+    azioni.appendChild(elimina);
+
+    box.appendChild(azioni);
+    c.appendChild(box);
+  });
+}
+
+$("#ricarica-pren").addEventListener('click', caricaPrenotazioni);
+
+/* ---------- pacchetti ---------- */
+function disegnaPacchetti(){
+  const c = $("#lista-pacchetti"); c.innerHTML = "";
+  if(!dati.pacchetti.length){
+    c.innerHTML = '<p class="vuoto">Nessun pacchetto.</p>'; return;
+  }
+  dati.pacchetti.forEach(p => {
+    const box = document.createElement('div');
+    box.className = 'pacchetto';
+
+    const cima = document.createElement('div');
+    cima.className = 'cima';
+    cima.innerHTML = `<div><h3>${esc(p.nome)}</h3>
+        <div class="st">${esc(p.sottotitolo||'')}</div></div>`;
+    const modifica = document.createElement('button');
+    modifica.className = 'btn piccolo'; modifica.type = 'button'; modifica.textContent = 'Modifica';
+    modifica.addEventListener('click', () => apriPacchetto(p));
+    cima.appendChild(modifica);
+    box.appendChild(cima);
+
+    if(!p.attivo){
+      const t = document.createElement('div');
+      t.className = 'nota'; t.style.color = 'var(--danger)';
+      t.textContent = 'Nascosto ai clienti';
+      box.appendChild(t);
+    }
+    if(p.nota){
+      const n = document.createElement('div');
+      n.className = 'nota'; n.textContent = p.nota;
+      box.appendChild(n);
+    }
+
+    if(p.livelli && p.livelli.length){
+      box.insertAdjacentHTML('beforeend', '<div class="gruppo">Livelli</div>');
+      p.livelli.forEach(l => box.appendChild(rigaVoce(l, p, 'livello')));
+    }
+    const bl = document.createElement('button');
+    bl.className = 'btn piccolo pieno'; bl.type = 'button'; bl.textContent = '+ Livello';
+    bl.addEventListener('click', () => {
+      const l = {id:'l'+Date.now(), nome:"", titolo:"", descrizione:"", durata:"",
+                 prezzi:vuotoPrezzi(), evidenza:false, attivo:true};
+      p.livelli = p.livelli || []; p.livelli.push(l); apriVoce(l, p, 'livello');
+    });
+    box.appendChild(bl);
+
+    box.insertAdjacentHTML('beforeend', '<div class="gruppo">Extra</div>');
+    (p.extra||[]).forEach(x => box.appendChild(rigaVoce(x, p, 'extra')));
+    const bx = document.createElement('button');
+    bx.className = 'btn piccolo pieno'; bx.type = 'button'; bx.textContent = '+ Extra';
+    bx.addEventListener('click', () => {
+      const x = {id:'x'+Date.now(), nome:"", prezzi:vuotoPrezzi(), attivo:true};
+      p.extra = p.extra || []; p.extra.push(x); apriVoce(x, p, 'extra');
+    });
+    box.appendChild(bx);
+
+    c.appendChild(box);
+  });
+}
+
+function vuotoPrezzi(){
+  const o = {}; dati.taglie.forEach(t => o[t.id] = null); return o;
+}
+
+function rigaVoce(v, pacchetto, tipo){
+  const b = document.createElement('button');
+  b.className = 'riga'; b.type = 'button';
+  const etichetta = tipo === 'livello' ? (v.titolo || v.nome || 'Senza nome') : (v.nome || 'Senza nome');
+  const sotto = tipo === 'livello'
+    ? `${v.nome ? '<span class="tag">'+esc(v.nome)+'</span>' : ''}
+       ${v.evidenza ? '<span class="tag on">Più richiesto</span>' : ''}
+       ${v.attivo===false ? '<span class="tag off">Nascosto</span>' : ''}
+       ${esc(v.durata||'')}`
+    : `${v.attivo===false ? '<span class="tag off">Nascosto</span>' : ''}`;
+  b.innerHTML = `<span class="corpo">
+      <span class="nome">${esc(etichetta)}</span>
+      <span class="meta">${sotto}</span></span>${riepilogoPrezzi(v.prezzi, v.suRichiesta)}`;
+  b.addEventListener('click', () => apriVoce(v, pacchetto, tipo));
+  return b;
+}
+
+/* ---------- finestra voce ---------- */
+function apriVoce(v, pacchetto, tipo){
+  voceCorrente = v; pacchettoDiVoce = pacchetto; tipoVoce = tipo;
+  const livello = tipo === 'livello';
+  $("#dlg-voce-titolo").textContent = livello ? "Livello del pacchetto" : "Servizio extra";
+  $("#v-solo-livello").hidden = !livello;
+  $("#v-evidenza-box").hidden = !livello;
+  $("#v-nome-aiuto").textContent = livello ? "(Base, Premium…)" : "";
+  $("#v-nome").value = v.nome || "";
+  $("#v-titolo").value = v.titolo || "";
+  $("#v-descrizione").value = v.descrizione || "";
+  $("#v-durata").value = v.durata || "";
+  $("#v-evidenza").checked = !!v.evidenza;
+  $("#v-attivo").checked = v.attivo !== false;
+  $("#v-su-richiesta").checked = !!v.suRichiesta;
+  $("#v-prezzi-box").hidden = !!v.suRichiesta;
+
+  const g = $("#v-taglie"); g.innerHTML = "";
+  dati.taglie.forEach(t => {
+    const p = v.prezzi ? v.prezzi[t.id] : null;
+    const cella = document.createElement('div');
+    cella.className = 'cella';
+    cella.innerHTML = `<label for="pz-${t.id}">${esc(t.nome)}</label>
+      <div class="euro"><span>€</span>
+      <input type="number" min="0" step="1" inputmode="numeric" id="pz-${t.id}"
+             value="${p===null||p===undefined?'':p}"></div>`;
+    g.appendChild(cella);
+  });
+  $("#dlg-voce").showModal();
+}
+
+$("#dlg-voce").addEventListener('close', () => {
+  const dlg = $("#dlg-voce"), v = voceCorrente, p = pacchettoDiVoce, tipo = tipoVoce;
+  if(!v) return;
+  if(dlg.returnValue === 'elimina'){
+    const nome = v.titolo || v.nome || 'questa voce';
+    if(confirm(`Eliminare "${nome}"? Non si può annullare.`)){
+      const lista = tipo === 'livello' ? p.livelli : p.extra;
+      const i = lista.indexOf(v); if(i > -1) lista.splice(i,1);
+      disegnaPacchetti(); segnaModificato();
+    }
+  } else if(dlg.returnValue === 'ok'){
+    v.nome = $("#v-nome").value.trim();
+    if(tipo === 'livello'){
+      v.titolo = $("#v-titolo").value.trim();
+      v.descrizione = $("#v-descrizione").value;
+      v.durata = $("#v-durata").value.trim();
+      v.evidenza = $("#v-evidenza").checked;
+    }
+    v.attivo = $("#v-attivo").checked;
+    v.suRichiesta = $("#v-su-richiesta").checked;
+    v.prezzi = v.prezzi || {};
+    dati.taglie.forEach(t => {
+      const el = $("#pz-" + t.id);
+      v.prezzi[t.id] = (!el || el.value === "") ? null : Number(el.value);
+    });
+    disegnaPacchetti(); segnaModificato();
+  }
+  voceCorrente = null; pacchettoDiVoce = null; tipoVoce = null;
+});
+
+/* ---------- finestra pacchetto ---------- */
+function apriPacchetto(p){
+  pacchettoCorrente = p;
+  $("#dlg-pacchetto-titolo").textContent = p.nome || "Nuovo pacchetto";
+  $("#p-nome").value = p.nome || "";
+  $("#p-sottotitolo").value = p.sottotitolo || "";
+  $("#p-nota").value = p.nota || "";
+  $("#p-attivo").checked = p.attivo !== false;
+  mostraAnteprima("#p-foto-anteprima", p.foto);
+  $("#dlg-pacchetto").showModal();
+}
+
+$("#dlg-pacchetto").addEventListener('close', () => {
+  const dlg = $("#dlg-pacchetto"), p = pacchettoCorrente;
+  if(!p) return;
+  if(dlg.returnValue === 'elimina'){
+    if(confirm(`Eliminare il pacchetto "${p.nome}" con tutti i suoi livelli ed extra?`)){
+      dati.pacchetti = dati.pacchetti.filter(x => x !== p);
+      disegnaPacchetti(); segnaModificato();
+    }
+  } else if(dlg.returnValue === 'ok'){
+    p.nome = $("#p-nome").value.trim() || "Senza nome";
+    p.sottotitolo = $("#p-sottotitolo").value.trim();
+    p.nota = $("#p-nota").value.trim();
+    p.attivo = $("#p-attivo").checked;
+    disegnaPacchetti(); segnaModificato();
+  }
+  pacchettoCorrente = null;
+});
+
+$("#nuovo-pacchetto").addEventListener('click', () => {
+  const p = {id:'p'+Date.now(), nome:"", sottotitolo:"", foto:"", nota:"",
+             attivo:true, livelli:[], extra:[]};
+  dati.pacchetti.push(p); apriPacchetto(p);
+});
+
+/* ---------- taglie ---------- */
+$("#v-su-richiesta").addEventListener('change', e => {
+  $("#v-prezzi-box").hidden = e.target.checked;
+});
+
+function disegnaTaglie(){
+  const c = $("#lista-taglie"); c.innerHTML = "";
+  dati.taglie.forEach(t => {
+    const d = document.createElement('div');
+    d.className = 'pacchetto';
+    d.innerHTML = `<h3>${esc(t.nome)}</h3>
+      <label for="tg-et-${t.id}">Come si chiama</label>
+      <input type="text" id="tg-et-${t.id}" value="${esc(t.etichetta||'')}" placeholder="Microcar">
+      <label for="tg-de-${t.id}">Descrizione</label>
+      <input type="text" id="tg-de-${t.id}" value="${esc(t.descrizione||'')}"
+             placeholder="Auto super compatte per la città">
+      <label for="tg-es-${t.id}">Esempi di auto</label>
+      <input type="text" id="tg-es-${t.id}" value="${esc(t.esempi||'')}"
+             placeholder="Fiat 500, Panda, Smart">`;
+    c.appendChild(d);
+    d.querySelector(`#tg-et-${t.id}`).addEventListener('input', e => { t.etichetta = e.target.value; segnaModificato(); });
+    d.querySelector(`#tg-de-${t.id}`).addEventListener('input', e => { t.descrizione = e.target.value; segnaModificato(); });
+    d.querySelector(`#tg-es-${t.id}`).addEventListener('input', e => { t.esempi = e.target.value; segnaModificato(); });
+  });
+}
+
+/* ---------- galleria ---------- */
+function disegnaGalleria(){
+  const c = $("#lista-galleria"); c.innerHTML = "";
+  if(!dati.galleria.length){
+    c.innerHTML = '<p class="vuoto">Nessun lavoro caricato.<br>Aggiungi le foto prima/dopo dei tuoi interventi.</p>'; return;
+  }
+  dati.galleria.forEach(l => {
+    const b = document.createElement('button');
+    b.className = 'riga'; b.type = 'button';
+    b.innerHTML = `<span class="corpo">
+        <span class="nome">${esc(l.auto || 'Senza titolo')}</span>
+        <span class="meta">${esc(l.servizio||'')}
+          ${(l.prima && l.dopo) ? '<span class="tag on">Prima/Dopo</span>'
+                                : '<span class="tag off">Foto mancanti</span>'}
+        </span></span>`;
+    b.addEventListener('click', () => apriLavoro(l));
+    c.appendChild(b);
+  });
+}
+function apriLavoro(l){
+  lavoroCorrente = l;
+  $("#l-auto").value = l.auto || ""; $("#l-servizio").value = l.servizio || "";
+  $("#l-nota").value = l.nota || "";
+  mostraAnteprima("#l-prima-anteprima", l.prima);
+  mostraAnteprima("#l-dopo-anteprima", l.dopo);
+  $("#dlg-lavoro").showModal();
+}
+$("#dlg-lavoro").addEventListener('close', () => {
+  const dlg = $("#dlg-lavoro"), l = lavoroCorrente;
+  if(!l) return;
+  if(dlg.returnValue === 'elimina'){
+    if(confirm("Eliminare questo lavoro?")){
+      dati.galleria = dati.galleria.filter(x => x !== l);
+      disegnaGalleria(); segnaModificato();
+    }
+  } else if(dlg.returnValue === 'ok'){
+    l.auto = $("#l-auto").value.trim();
+    l.servizio = $("#l-servizio").value.trim();
+    l.nota = $("#l-nota").value.trim();
+    disegnaGalleria(); segnaModificato();
+  }
+  lavoroCorrente = null;
+});
+$("#nuovo-lavoro").addEventListener('click', () => {
+  const l = {id:'g'+Date.now(), auto:"", servizio:"", nota:"", prima:"", dopo:""};
+  dati.galleria.push(l); apriLavoro(l);
+});
+
+/* ---------- info ---------- */
+function riempiInfo(){
+  const a = dati.azienda || (dati.azienda = {});
+  const p = dati.promo || (dati.promo = {});
+  $("#f-indirizzo").value = a.indirizzo || ""; $("#f-telefono").value = a.telefono || "";
+  $("#f-whatsapp").value = a.whatsapp || "";   $("#f-orari").value = a.orari || "";
+  $("#f-promo-attiva").checked = !!p.attiva;   $("#f-promo-testo").value = p.testo || "";
+}
+["#f-indirizzo","#f-telefono","#f-whatsapp","#f-orari","#f-promo-attiva","#f-promo-testo"]
+  .forEach(sel => $(sel).addEventListener('input', () => {
+    dati.azienda.indirizzo = $("#f-indirizzo").value;
+    dati.azienda.telefono  = $("#f-telefono").value;
+    dati.azienda.whatsapp  = $("#f-whatsapp").value;
+    dati.azienda.orari     = $("#f-orari").value;
+    dati.promo.attiva      = $("#f-promo-attiva").checked;
+    dati.promo.testo       = $("#f-promo-testo").value;
+    segnaModificato();
+  }));
+
+/* ---------- foto ---------- */
+function mostraAnteprima(sel, percorso){
+  const img = $(sel);
+  if(percorso){ img.src = percorso; img.hidden = false; }
+  else { img.removeAttribute('src'); img.hidden = true; }
+}
+async function inviaFoto(file){
+  const base64 = await new Promise((ok, ko) => {
+    const fr = new FileReader();
+    fr.onload = () => ok(fr.result); fr.onerror = ko; fr.readAsDataURL(file);
+  });
+  const r = await fetch('/api/foto', {method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({nome:file.name, dati:base64})});
+  const out = await r.json();
+  if(!r.ok || out.errore) throw new Error(out.errore || 'errore');
+  return out.percorso;
+}
+function collegaFoto(inputSel, anteprimaSel, assegna){
+  $(inputSel).addEventListener('change', async e => {
+    const file = e.target.files[0]; if(!file) return;
+    try{
+      $("#stato").className = "stato"; $("#stato").textContent = "Carico la foto…";
+      const percorso = await inviaFoto(file);
+      assegna(percorso); mostraAnteprima(anteprimaSel, percorso); segnaModificato();
+    }catch(err){ segnaErrore("Foto non caricata: " + err.message); }
+    e.target.value = "";
+  });
+}
+collegaFoto("#p-foto",  "#p-foto-anteprima",  p => { if(pacchettoCorrente) pacchettoCorrente.foto = p; });
+collegaFoto("#l-prima", "#l-prima-anteprima", p => { if(lavoroCorrente) lavoroCorrente.prima = p; });
+collegaFoto("#l-dopo",  "#l-dopo-anteprima",  p => { if(lavoroCorrente) lavoroCorrente.dopo  = p; });
+
+/* ---------- salvataggio ---------- */
+$("#salva").addEventListener('click', async () => {
+  const btn = $("#salva"); btn.disabled = true; btn.textContent = "Salvo…";
+  try{
+    const r = await fetch('/api/dati', {method:'POST',
+      headers:{'Content-Type':'application/json'}, body: JSON.stringify(dati)});
+    const out = await r.json();
+    if(!r.ok || out.errore) throw new Error(out.errore || 'errore');
+    segnaSalvato("Salvato");
+  }catch(e){ segnaErrore("Non salvato: " + e.message); btn.disabled = false; }
+  btn.textContent = "Salva";
+});
+
+/* ---------- orari e disponibilità ---------- */
+function disp(){
+  return dati.disponibilita || (dati.disponibilita = {giorni:{}, pausa:{}, chiusure:[]});
+}
+
+function disegnaOrari(){
+  const d = disp();
+  const c = $("#lista-giorni"); c.innerHTML = "";
+
+  Object.keys(d.giorni || {}).sort().forEach(k => {
+    const g = d.giorni[k];
+    const riga = document.createElement('div');
+    riga.style.cssText = 'border-bottom:1px solid var(--border);padding:8px 0';
+    riga.innerHTML = `
+      <label class="interruttore" for="gg-${k}">
+        <span>${esc(g.nome)}</span>
+        <input type="checkbox" id="gg-${k}" ${g.aperto ? 'checked' : ''}>
+        <span class="binario" aria-hidden="true"></span>
+      </label>
+      <div class="taglie" id="gg-ore-${k}" style="grid-template-columns:1fr 1fr;margin-bottom:8px"
+           ${g.aperto ? '' : 'hidden'}>
+        <div><label for="gg-da-${k}">Dalle</label>
+          <input type="time" id="gg-da-${k}" value="${esc(g.da||'08:30')}"></div>
+        <div><label for="gg-a-${k}">Alle</label>
+          <input type="time" id="gg-a-${k}" value="${esc(g.a||'18:30')}"></div>
+      </div>`;
+    c.appendChild(riga);
+
+    riga.querySelector(`#gg-${k}`).addEventListener('change', e => {
+      g.aperto = e.target.checked;
+      $(`#gg-ore-${k}`).hidden = !g.aperto;
+      segnaModificato();
+    });
+    riga.querySelector(`#gg-da-${k}`).addEventListener('input', e => { g.da = e.target.value; segnaModificato(); });
+    riga.querySelector(`#gg-a-${k}`).addEventListener('input',  e => { g.a  = e.target.value; segnaModificato(); });
+  });
+
+  const p = d.pausa || (d.pausa = {});
+  $("#or-pausa-attiva").checked = !!p.attiva;
+  $("#or-pausa-da").value = p.da || '13:00';
+  $("#or-pausa-a").value  = p.a  || '14:00';
+  $("#or-passo").value = String(d.passo || 30);
+  $("#or-preavviso").value = String(d.preavvisoOre ?? 12);
+
+  disegnaChiusure();
+  disegnaDurate();
+}
+
+["or-pausa-attiva","or-pausa-da","or-pausa-a","or-passo","or-preavviso"].forEach(id => {
+  $("#" + id).addEventListener('input', () => {
+    const d = disp();
+    d.pausa = {attiva: $("#or-pausa-attiva").checked,
+               da: $("#or-pausa-da").value, a: $("#or-pausa-a").value};
+    d.passo = Number($("#or-passo").value);
+    d.preavvisoOre = Number($("#or-preavviso").value);
+    segnaModificato();
+  });
+});
+
+function disegnaChiusure(){
+  const d = disp();
+  const c = $("#lista-chiusure"); c.innerHTML = "";
+  d.chiusure = (d.chiusure || []).sort();
+  if(!d.chiusure.length){
+    c.innerHTML = '<p style="color:var(--text-2);font-size:13px">Nessuna chiusura programmata.</p>';
+    return;
+  }
+  d.chiusure.forEach(giorno => {
+    const r = document.createElement('div');
+    r.className = 'riga'; r.style.cursor = 'default';
+    const [a,m,g] = giorno.split('-');
+    r.innerHTML = `<span class="corpo"><span class="nome">${g}/${m}/${a}</span></span>`;
+    const b = document.createElement('button');
+    b.className = 'btn piccolo pericolo'; b.type = 'button'; b.textContent = 'Togli';
+    b.addEventListener('click', () => {
+      d.chiusure = d.chiusure.filter(x => x !== giorno);
+      disegnaChiusure(); segnaModificato();
+    });
+    r.appendChild(b);
+    c.appendChild(r);
+  });
+}
+
+$("#or-aggiungi-chiusura").addEventListener('click', () => {
+  const v = $("#or-nuova-chiusura").value;
+  if(!v) return;
+  const d = disp();
+  d.chiusure = d.chiusure || [];
+  if(!d.chiusure.includes(v)){ d.chiusure.push(v); disegnaChiusure(); segnaModificato(); }
+  $("#or-nuova-chiusura").value = "";
+});
+
+function disegnaDurate(){
+  const c = $("#lista-durate"); c.innerHTML = "";
+  (dati.pacchetti||[]).forEach(p => {
+    (p.livelli||[]).forEach(l => {
+      const r = document.createElement('div');
+      r.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)';
+      r.innerHTML = `<span style="flex:1;min-width:0;font-size:15px">${esc(l.titolo || l.nome)}
+          <small style="display:block;color:var(--text-2);font-size:12px">${esc(p.nome)}</small></span>`;
+      const aGiorni = (l.durataGiorni || 1) > 1;
+      const box = document.createElement('div');
+      box.style.cssText = 'flex:0 0 168px;display:flex;align-items:center;gap:6px';
+      box.innerHTML = `
+        <input type="number" min="1" step="${aGiorni ? 1 : 15}" inputmode="numeric"
+          value="${aGiorni ? l.durataGiorni : (l.durataMinuti || '')}"
+          placeholder="${aGiorni ? '2' : '120'}"
+          aria-label="Durata di ${esc(l.titolo||l.nome)}" style="min-height:44px">
+        <select aria-label="Unità" style="min-height:44px;padding:0 8px">
+          <option value="min"    ${aGiorni ? '' : 'selected'}>min</option>
+          <option value="giorni" ${aGiorni ? 'selected' : ''}>giorni</option>
+        </select>`;
+      const numero = box.querySelector('input'), unita = box.querySelector('select');
+      const applica = () => {
+        const v = numero.value === "" ? null : Number(numero.value);
+        if(unita.value === 'giorni'){
+          l.durataGiorni = v || 1; l.durataMinuti = null;
+        }else{
+          l.durataMinuti = v; l.durataGiorni = 1;
+        }
+        segnaModificato();
+      };
+      numero.addEventListener('input', applica);
+      unita.addEventListener('change', () => { numero.step = unita.value === 'giorni' ? 1 : 15; applica(); });
+      r.appendChild(box);
+      c.appendChild(r);
+    });
+  });
+}
+
+/* ---------- avvisi Telegram ---------- */
+let tgChat = null;
+
+function tgMessaggio(sel, testo, ok){
+  const p = $(sel);
+  p.textContent = testo;
+  p.style.color = ok ? 'var(--ok)' : 'var(--danger)';
+  p.hidden = false;
+}
+
+async function tgChiama(azione, extra){
+  const r = await fetch('/api/telegram/' + azione, {method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(Object.assign({token: $("#tg-token").value.trim()}, extra||{}))});
+  const o = await r.json();
+  if(o.errore) throw new Error(o.errore);
+  return o;
+}
+
+$("#tg-verifica").addEventListener('click', async () => {
+  const b = $("#tg-verifica"); b.disabled = true; b.textContent = 'Verifico…';
+  try{
+    const o = await tgChiama('verifica');
+    tgMessaggio('#tg-esito1', 'Token valido. Bot trovato: @' + o.bot, true);
+    $("#tg-nome-bot").textContent = '@' + o.bot;
+    $("#tg-passo2").hidden = false;
+  }catch(e){ tgMessaggio('#tg-esito1', e.message, false); }
+  b.disabled = false; b.textContent = 'Verifica il token';
+});
+
+$("#tg-collega").addEventListener('click', async () => {
+  const b = $("#tg-collega"); b.disabled = true; b.textContent = 'Cerco…';
+  try{
+    const o = await tgChiama('chat');
+    if(!o.ok){ tgMessaggio('#tg-esito2', o.messaggio, false); }
+    else{
+      tgChat = o.chat_id;
+      await tgChiama('prova', {chat_id: tgChat});
+      tgMessaggio('#tg-esito2',
+        'Collegato' + (o.nome ? ' a ' + o.nome : '') + '. Ti ho mandato un messaggio di prova su Telegram.', true);
+      const sql = await tgChiama('sql', {chat_id: tgChat});
+      $("#tg-sql").value = sql.sql;
+      $("#tg-passo3").hidden = false;
+    }
+  }catch(e){ tgMessaggio('#tg-esito2', e.message, false); }
+  b.disabled = false; b.textContent = 'Ho scritto al bot, collegami';
+});
+
+$("#tg-copia").addEventListener('click', async () => {
+  const b = $("#tg-copia");
+  try{
+    await navigator.clipboard.writeText($("#tg-sql").value);
+    b.textContent = 'Copiato!';
+  }catch(e){
+    $("#tg-sql").select(); b.textContent = 'Selezionato: premi Cmd+C';
+  }
+  setTimeout(() => b.textContent = 'Copia il testo', 2500);
+});
+
+/* ---------- pubblicazione online ---------- */
+$("#pubblica").addEventListener('click', async () => {
+  if(modificato && !confirm("Hai modifiche non salvate: verranno pubblicate solo dopo il salvataggio.\n\nPubblico lo stesso?"))
+    return;
+  const b = $("#pubblica");
+  b.disabled = true; b.textContent = 'Pubblico…';
+  const s = $("#stato"); s.className = 'stato'; s.textContent = 'Mando il sito online…';
+  try{
+    const r = await fetch('/api/pubblica', {method:'POST',
+      headers:{'Content-Type':'application/json'}, body:'{}'});
+    const o = await r.json();
+    if(o.errore) throw new Error(o.errore);
+    s.className = 'stato salvato'; s.textContent = o.messaggio;
+  }catch(e){
+    segnaErrore('Non pubblicato: ' + e.message);
+  }
+  b.disabled = false; b.textContent = 'Pubblica';
+});
+
+window.addEventListener('beforeunload', e => { if(modificato){ e.preventDefault(); e.returnValue=''; } });
+
+/* ---------- accesso con password ---------- */
+const ACCESSO = window.ROPE_ACCESSO;
+
+/* Pubblicazione del sito e avvisi Telegram passano dal Mac:
+   online quei comandi non hanno senso, quindi li nascondo. */
+if(!ACCESSO.locale){
+  $("#pubblica").hidden = true;
+  $("#tab-avvisi").hidden = true;
+}
+
+function mostraAccesso(messaggio){
+  $("#accesso").hidden = false;
+  $("#esci").hidden = true;
+  const e = $("#ac-errore");
+  if(messaggio){ e.textContent = messaggio; e.hidden = false; } else { e.hidden = true; }
+  $("#ac-password").value = "";
+  ($("#ac-email").value ? $("#ac-password") : $("#ac-email")).focus();
+}
+
+function apriPannello(){
+  $("#accesso").hidden = true;
+  $("#esci").hidden = false;
+  $("#esci").title = "Esci da " + ACCESSO.chiSono();
+  carica();
+}
+
+$("#accesso-form").addEventListener('submit', async e => {
+  e.preventDefault();
+  const b = $("#ac-entra"), err = $("#ac-errore");
+  err.hidden = true; b.disabled = true; b.textContent = 'Entro…';
+  try{
+    await ACCESSO.entra($("#ac-email").value, $("#ac-password").value);
+    $("#ac-password").value = "";
+    apriPannello();
+  }catch(ex){
+    err.textContent = ex.message; err.hidden = false;
+    $("#ac-password").select();
+  }
+  b.disabled = false; b.textContent = 'Entra';
+});
+
+$("#esci").addEventListener('click', () => {
+  if(modificato && !confirm("Hai modifiche non salvate: uscendo le perdi.\n\nEsco lo stesso?")) return;
+  modificato = false;
+  ACCESSO.esci();
+  location.reload();
+});
+
+/* se il token scade mentre lavora, torna alla schermata di accesso */
+document.addEventListener('rope-sessione-scaduta',
+  () => mostraAccesso("La sessione è scaduta: rientra con la password."));
+
+if(ACCESSO.dentro()) apriPannello(); else mostraAccesso();
+</script>
+</body>
+</html>
