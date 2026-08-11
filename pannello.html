@@ -16,6 +16,9 @@
     color-scheme:dark;
   }
   *{box-sizing:border-box}
+  /* "hidden" deve vincere sempre: senza questa riga le regole qui sotto
+     (display:flex, display:inline-flex...) tengono visibili cose nascoste */
+  [hidden]{display:none!important}
   body{margin:0;background:var(--bg);color:var(--text);font-family:var(--body);
        font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;
        padding-bottom:calc(96px + env(safe-area-inset-bottom))}
