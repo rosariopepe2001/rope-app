@@ -392,7 +392,8 @@
   <form method="dialog">
     <div class="testata">
       <h3 id="dlg-nuova-titolo">Prenotazione a mano</h3>
-      <button class="btn piccolo" value="annulla" aria-label="Chiudi senza salvare">Chiudi</button>
+      <button class="btn piccolo" type="button" id="n-chiudi"
+              aria-label="Chiudi senza salvare">Chiudi</button>
     </div>
     <div class="contenuto">
       <p class="nota" style="margin-top:0">Per il cliente che ti chiama o si presenta allo
@@ -473,7 +474,7 @@
       <p class="nota" id="n-errore"
          style="color:var(--danger);margin:0 0 12px;line-height:1.5" hidden></p>
       <div style="display:flex;gap:10px">
-        <button class="btn" value="annulla">Annulla</button>
+        <button class="btn" type="button" id="n-annulla">Annulla</button>
         <button class="btn primario" type="button" id="n-salva">Salva prenotazione</button>
       </div>
     </div>
@@ -1500,9 +1501,24 @@ async function nAggiornaOrari(){
   }
 }
 
-/* Invio dentro un campo non deve chiudere la finestra buttando via tutto */
+/* Invio da tastiera = salva. I due pulsanti che chiudono non sono più
+   "submit", altrimenti il browser userebbe il primo di quelli per l'Invio
+   e la finestra si chiuderebbe buttando via tutto. */
 dlgN.querySelector('form').addEventListener('submit', e => {
-  if(!e.submitter) e.preventDefault();
+  e.preventDefault();
+  nSalva();
+});
+$("#n-chiudi").addEventListener('click', () => dlgN.close());
+$("#n-annulla").addEventListener('click', () => dlgN.close());
+
+/* Alcuni telefoni non mandano da soli l'Invio: qui lo prendo di persona.
+   Nelle note l'Invio serve ad andare a capo, e sui pulsanti a premerli. */
+dlgN.addEventListener('keydown', e => {
+  if(e.key !== 'Enter' || e.isComposing) return;
+  const t = e.target.tagName;
+  if(t === 'TEXTAREA' || t === 'BUTTON') return;
+  e.preventDefault();
+  nSalva();
 });
 
 $("#n-pacchetto").addEventListener('change', () => {
@@ -1530,7 +1546,10 @@ $("#nuova-pren").addEventListener('click', () => {
   dlgN.showModal();
 });
 
-$("#n-salva").addEventListener('click', async () => {
+let nInCorso = false;
+
+async function nSalva(){
+  if(nInCorso) return;               // due Invio di fila non salvano due volte
   nErrore(null);
   const nome = $("#n-nome").value.trim();
   const p = nPacchetto(), l = nLivello();
@@ -1557,6 +1576,7 @@ $("#n-salva").addEventListener('click', async () => {
 
   const sel = nSelezione();
   const b = $("#n-salva");
+  nInCorso = true;
   b.disabled = true; b.textContent = 'Salvo…';
   try{
     const r = await fetch('/api/prenotazioni', {method:'POST',
@@ -1599,8 +1619,11 @@ $("#n-salva").addEventListener('click', async () => {
   }catch(e){
     nErrore("Non salvata: " + e.message);
   }
+  nInCorso = false;
   b.disabled = false; b.textContent = 'Salva prenotazione';
-});
+}
+
+$("#n-salva").addEventListener('click', nSalva);
 
 /* ---------- accesso con password ---------- */
 const ACCESSO = window.ROPE_ACCESSO;
