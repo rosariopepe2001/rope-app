@@ -140,7 +140,7 @@ window.ROPE_ACCESSO = (function(){
       return risposta({collegato: true, prenotazioni: await r.json()});
     },
 
-    /* Prenotazione scritta a mano da lui, per un cliente allo studio. */
+    /* Prenotazione scritta a mano da lui, per un cliente al centro. */
     async prenotazioniPOST(corpo){
       if(!corpo || !corpo.cliente_nome)
         return risposta({errore: "Serve almeno il nome del cliente"}, 400);

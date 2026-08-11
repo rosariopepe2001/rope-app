@@ -164,7 +164,7 @@ const $ = s => document.querySelector(s);
   const voci = [];
   if(az.whatsapp) voci.push({i:'chat', n:'Scrivici su WhatsApp',
     href:'https://wa.me/' + tel.replace('+',''), esterno:true});
-  if(az.telefono) voci.push({i:'call', n:'Chiama lo studio', href:'tel:' + tel});
+  if(az.telefono) voci.push({i:'call', n:'Chiama il centro', href:'tel:' + tel});
   if(az.indirizzo) voci.push({i:'location_on', n:az.indirizzo,
     href:'https://maps.apple.com/?q=' + encodeURIComponent(az.indirizzo), esterno:true});
   if(az.orari) voci.push({i:'schedule', n:az.orari, statico:true});
