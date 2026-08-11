@@ -63,7 +63,7 @@
 
 <main>
   <div class="testa">
-    <div class="avatar"><span class="material-symbols-outlined">person</span></div>
+    <div class="avatar"><span class="material-symbols-outlined" aria-hidden="true">person</span></div>
     <div>
       <h1 id="nome">Ospite</h1>
       <p id="sotto">Non hai ancora un account</p>
@@ -86,10 +86,10 @@
 </main>
 
 <nav class="tab">
-  <a href="01-home.html"><span class="material-symbols-outlined">home</span>Home</a>
-  <a href="02-servizi.html"><span class="material-symbols-outlined">list</span>Servizi</a>
-  <a href="04-data-e-ora.html"><span class="material-symbols-outlined">calendar_month</span>Prenotazioni</a>
-  <a href="09-profilo.html" class="attivo"><span class="material-symbols-outlined">person</span>Profilo</a>
+  <a href="01-home.html"><span class="material-symbols-outlined" aria-hidden="true">home</span>Home</a>
+  <a href="02-servizi.html"><span class="material-symbols-outlined" aria-hidden="true">list</span>Servizi</a>
+  <a href="04-data-e-ora.html"><span class="material-symbols-outlined" aria-hidden="true">calendar_month</span>Prenotazioni</a>
+  <a href="09-profilo.html" class="attivo"><span class="material-symbols-outlined" aria-hidden="true">person</span>Profilo</a>
 </nav>
 
 <script src="assets/config.js"></script>
@@ -172,10 +172,10 @@ const $ = s => document.querySelector(s);
   voci.push({i:'description', n:'Termini e privacy', statico:true});
 
   $("#voci").innerHTML = voci.map(v => v.statico
-    ? `<button type="button"><span class="material-symbols-outlined">${v.i}</span>${ROPE.esc(v.n)}
+    ? `<button type="button"><span class="material-symbols-outlined" aria-hidden="true">${v.i}</span>${ROPE.esc(v.n)}
        <span class="material-symbols-outlined frec">chevron_right</span></button>`
     : `<a href="${ROPE.esc(v.href)}" ${v.esterno ? 'target="_blank" rel="noopener"' : ''}>
-       <span class="material-symbols-outlined">${v.i}</span>${ROPE.esc(v.n)}
+       <span class="material-symbols-outlined" aria-hidden="true">${v.i}</span>${ROPE.esc(v.n)}
        <span class="material-symbols-outlined frec">chevron_right</span></a>`).join('');
 })();
 </script>

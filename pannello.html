@@ -193,7 +193,7 @@
     <input type="password" id="ac-password" autocomplete="current-password" required
            placeholder="la tua password">
 
-    <p class="errore" id="ac-errore" hidden></p>
+    <p class="errore" id="ac-errore" role="alert" hidden></p>
     <button class="btn primario pieno" id="ac-entra" type="submit">Entra</button>
   </form>
 </div>
@@ -339,7 +339,7 @@
         font-family:ui-monospace,Menlo,monospace;font-size:12px;line-height:1.5"></textarea>
       <button class="btn primario pieno" id="tg-copia" style="margin-top:12px">Copia il testo</button>
       <p class="nota" style="margin-top:14px">
-        <span class="material-symbols-outlined">lock</span>
+        <span class="material-symbols-outlined" aria-hidden="true">lock</span>
         <span>Contiene il token del tuo bot: incollalo solo dentro Supabase, non altrove.</span></p>
     </div>
   </section>
@@ -471,7 +471,7 @@
 
     </div>
     <div class="azioni" style="flex-direction:column;align-items:stretch;gap:0">
-      <p class="nota" id="n-errore"
+      <p class="nota" id="n-errore" role="alert"
          style="color:var(--danger);margin:0 0 12px;line-height:1.5" hidden></p>
       <div style="display:flex;gap:10px">
         <button class="btn" type="button" id="n-annulla">Annulla</button>
@@ -605,9 +605,9 @@
 
 <!-- il numero dopo ?v= va cambiato a ogni modifica di questi file:
      costringe telefoni e browser a riscaricarli invece di usare la copia vecchia -->
-<script src="assets/config.js?v=5"></script>
-<script src="assets/app.js?v=5"></script>
-<script src="assets/pannello-api.js?v=5"></script>
+<script src="assets/config.js?v=6"></script>
+<script src="assets/app.js?v=6"></script>
+<script src="assets/pannello-api.js?v=6"></script>
 <script>
 const $ = s => document.querySelector(s);
 let dati = null, modificato = false;
@@ -709,7 +709,7 @@ async function caricaPrenotazioni(){
       <p class="nota" style="margin-top:14px">La chiave riservata resta su questo Mac.
         Non finisce nell'app e non la vede nessun altro.</p>
 
-      <p id="cg-errore" style="color:var(--danger);font-size:13px;margin:12px 0 0" hidden></p>
+      <p id="cg-errore" role="alert" style="color:var(--danger);font-size:13px;margin:12px 0 0" hidden></p>
       <button class="btn primario pieno" id="cg-salva" style="margin-top:14px">Collega</button>
     </div>`;
 
@@ -743,7 +743,22 @@ async function caricaPrenotazioni(){
   }
 
   c.innerHTML = "";
-  p.forEach(v => {
+
+  /* Prima quelle che devi ancora fare, dalla più vicina. Le passate restano
+     consultabili in fondo, dalla più recente: senza questo, col tempo apri
+     il pannello e vedi solo lavori di mesi fa. */
+  const oggi = ROPE.dataISO(new Date());
+  const future  = p.filter(v => !v.data_app || v.data_app >= oggi);
+  const passate = p.filter(v => v.data_app && v.data_app < oggi).reverse();
+
+  [...future, ...passate].forEach((v, indice) => {
+    if(indice === future.length && passate.length){
+      const sep = document.createElement('div');
+      sep.className = 'gruppo';
+      sep.style.marginTop = '26px';
+      sep.textContent = 'Già passate';
+      c.appendChild(sep);
+    }
     const st = STATI[v.stato] || STATI.nuova;
     const auto = v.auto || {};
     const extra = (v.extra||[]).map(e => e.nome).filter(Boolean);
@@ -1572,12 +1587,19 @@ async function apriModifica(v){
   $("#n-salva").textContent = "Salva modifiche";
 
   nRiempiPacchetti(); nRiempiTaglie();
-  if(v.pacchetto_id && dati.pacchetti.some(p => p.id === v.pacchetto_id))
-    $("#n-pacchetto").value = v.pacchetto_id;
+  const c1 = v.pacchetto_id && dati.pacchetti.some(p => p.id === v.pacchetto_id);
+  if(c1) $("#n-pacchetto").value = v.pacchetto_id;
   nRiempiLivelli();
   const p = nPacchetto();
-  if(v.livello_id && p && (p.livelli||[]).some(l => l.id === v.livello_id))
-    $("#n-livello").value = v.livello_id;
+  const c2 = v.livello_id && p && (p.livelli||[]).some(l => l.id === v.livello_id);
+  if(c2) $("#n-livello").value = v.livello_id;
+
+  /* Se nel frattempo ha cancellato o rinominato quel servizio, la finestra
+     mostrerebbe il primo della lista e salvando lo cambierebbe di nascosto. */
+  if(!c1 || !c2)
+    nErrore('Attenzione: il servizio di questa prenotazione ("'
+      + (v.servizio || v.pacchetto || 'non indicato')
+      + '") non esiste più nel listino. Se salvi, viene sostituito con quello scelto qui sopra.');
 
   if(v.taglia && dati.taglie.some(t => t.id === v.taglia)) $("#n-taglia").value = v.taglia;
   nRiempiExtra();

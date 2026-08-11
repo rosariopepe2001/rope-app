@@ -112,7 +112,7 @@
 
 <header>
   <img src="assets/rope-logo.png" alt="ROPE Car Detailing">
-  <button aria-label="Cerca"><span class="material-symbols-outlined">search</span></button>
+  <span style="min-width:44px"></span>
 </header>
 
 <main>
@@ -129,10 +129,10 @@
 </main>
 
 <nav class="tab">
-  <a href="01-home.html"><span class="material-symbols-outlined">home</span>Home</a>
-  <a href="02-servizi.html" class="attivo"><span class="material-symbols-outlined">list</span>Servizi</a>
-  <a href="04-data-e-ora.html"><span class="material-symbols-outlined">calendar_month</span>Prenotazioni</a>
-  <a href="09-profilo.html"><span class="material-symbols-outlined">person</span>Profilo</a>
+  <a href="01-home.html"><span class="material-symbols-outlined" aria-hidden="true">home</span>Home</a>
+  <a href="02-servizi.html" class="attivo"><span class="material-symbols-outlined" aria-hidden="true">list</span>Servizi</a>
+  <a href="04-data-e-ora.html"><span class="material-symbols-outlined" aria-hidden="true">calendar_month</span>Prenotazioni</a>
+  <a href="09-profilo.html"><span class="material-symbols-outlined" aria-hidden="true">person</span>Profilo</a>
 </nav>
 
 <script src="assets/config.js"></script>
@@ -205,7 +205,7 @@ function disegna(){
         <h3>${esc(l.titolo || l.nome)}</h3>
         ${l.descrizione ? `<p>${esc(l.descrizione)}</p>` : ''}
         ${l.durata ? `<span class="durata">
-            <span class="material-symbols-outlined">schedule</span>${esc(l.durata)}</span>` : ''}
+            <span class="material-symbols-outlined" aria-hidden="true">schedule</span>${esc(l.durata)}</span>` : ''}
         <div class="piede">
           <div class="prezzo${pr.richiesta ? ' richiesta' : ''}">
             <small>${pr.richiesta ? 'Prezzo' : 'Prezzo ' + esc(tagliaNome())}</small>${pr.testo}</div>

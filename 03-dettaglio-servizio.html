@@ -38,7 +38,7 @@
 <body>
 
 <header class="top">
-  <a href="02-servizi.html" aria-label="Torna ai servizi"><span class="material-symbols-outlined">arrow_back</span></a>
+  <a href="02-servizi.html" aria-label="Torna ai servizi"><span class="material-symbols-outlined" aria-hidden="true">arrow_back</span></a>
   <span class="titolo">Servizio</span>
   <span style="min-width:44px"></span>
 </header>
@@ -95,10 +95,10 @@ function disegna(){
     <div class="pk">${ROPE.esc(pacchetto.nome)}</div>
     <h1 class="nome">${ROPE.esc(livello.titolo || livello.nome)}</h1>
     ${livello.nome ? `<span class="livello">${ROPE.esc(livello.nome)}</span>` : ''}
-    ${pacchetto.nota ? `<div class="nota"><span class="material-symbols-outlined">info</span>
+    ${pacchetto.nota ? `<div class="nota"><span class="material-symbols-outlined" aria-hidden="true">info</span>
        <span>${ROPE.esc(pacchetto.nota)}</span></div>` : ''}
     ${livello.durata ? `<div class="durata">
-       <span class="material-symbols-outlined">schedule</span>${ROPE.esc(livello.durata)}</div>` : ''}
+       <span class="material-symbols-outlined" aria-hidden="true">schedule</span>${ROPE.esc(livello.durata)}</div>` : ''}
     ${livello.descrizione ? `<p class="testo">${ROPE.esc(livello.descrizione)}</p>` : ''}
 
     <div class="selettore" style="margin-top:28px">
@@ -120,7 +120,7 @@ function disegna(){
       const attivo = scelti.includes(x.id);
       const l = document.createElement('label');
       l.className = 'extra' + (attivo ? ' scelto' : '');
-      l.innerHTML = `<span class="quadro"><span class="material-symbols-outlined">check</span></span>
+      l.innerHTML = `<span class="quadro"><span class="material-symbols-outlined" aria-hidden="true">check</span></span>
         <input type="checkbox" ${attivo ? 'checked' : ''}>
         <span class="n">${ROPE.esc(x.nome)}</span>
         <span class="p">${ROPE.testoPrezzo(x)}</span>`;

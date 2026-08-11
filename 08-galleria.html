@@ -72,16 +72,16 @@
 </main>
 
 <nav class="tab">
-  <a href="01-home.html"><span class="material-symbols-outlined">home</span>Home</a>
-  <a href="02-servizi.html"><span class="material-symbols-outlined">list</span>Servizi</a>
-  <a href="04-data-e-ora.html"><span class="material-symbols-outlined">calendar_month</span>Prenotazioni</a>
-  <a href="09-profilo.html"><span class="material-symbols-outlined">person</span>Profilo</a>
+  <a href="01-home.html"><span class="material-symbols-outlined" aria-hidden="true">home</span>Home</a>
+  <a href="02-servizi.html"><span class="material-symbols-outlined" aria-hidden="true">list</span>Servizi</a>
+  <a href="04-data-e-ora.html"><span class="material-symbols-outlined" aria-hidden="true">calendar_month</span>Prenotazioni</a>
+  <a href="09-profilo.html"><span class="material-symbols-outlined" aria-hidden="true">person</span>Profilo</a>
 </nav>
 
 <dialog id="dlg">
   <div class="testata">
     <h2 id="dlg-titolo"></h2>
-    <button id="chiudi" aria-label="Chiudi"><span class="material-symbols-outlined">close</span></button>
+    <button id="chiudi" aria-label="Chiudi"><span class="material-symbols-outlined" aria-hidden="true">close</span></button>
   </div>
   <div class="confronto" id="confronto">
     <img id="im-prima" alt="Prima dell'intervento">
@@ -145,7 +145,7 @@ function disegna(){
     b.className = 'tessera'; b.type = 'button';
     b.innerHTML = `
       ${l.dopo ? `<img src="${ROPE.esc(l.dopo)}" alt="${ROPE.esc(l.auto || 'Lavoro')}">`
-               : `<div class="senza"><span class="material-symbols-outlined">image</span></div>`}
+               : `<div class="senza"><span class="material-symbols-outlined" aria-hidden="true">image</span></div>`}
       ${(l.prima && l.dopo) ? '<span class="bd">Prima / Dopo</span>' : ''}
       <div class="cap">${ROPE.esc(l.auto || 'Senza titolo')}
         <small>${ROPE.esc(l.servizio || '')}</small></div>`;

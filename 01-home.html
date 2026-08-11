@@ -45,8 +45,7 @@
 <header class="top">
   <img class="logo" src="assets/rope-logo.png" alt="ROPE Car Detailing">
   <div style="display:flex;gap:4px">
-    <button aria-label="Notifiche"><span class="material-symbols-outlined">notifications</span></button>
-    <a href="09-profilo.html" aria-label="Profilo"><span class="material-symbols-outlined">account_circle</span></a>
+    <a href="09-profilo.html" aria-label="Profilo"><span class="material-symbols-outlined" aria-hidden="true">account_circle</span></a>
   </div>
 </header>
 
@@ -58,7 +57,7 @@
 
   <div class="appunt">
     <h3 id="app-titolo">Nessun appuntamento</h3>
-    <div class="riga"><span class="material-symbols-outlined">event</span>
+    <div class="riga"><span class="material-symbols-outlined" aria-hidden="true">event</span>
       <span id="app-quando">Prenota il tuo primo trattamento</span></div>
     <a class="btn primario pieno" href="02-servizi.html" style="margin-top:18px">Prenota un servizio</a>
   </div>
@@ -66,7 +65,8 @@
   <div class="sezione" style="display:flex;justify-content:space-between;align-items:center">
     <span>Servizi</span>
     <a href="02-servizi.html" style="color:var(--text-2);text-decoration:none;font-family:var(--body);
-       font-size:12px;letter-spacing:0;text-transform:none">Vedi tutti</a>
+       font-size:12px;letter-spacing:0;text-transform:none;display:inline-flex;align-items:center;
+       min-height:44px;padding:0 4px;margin:-10px -4px">Vedi tutti</a>
   </div>
   <div class="scorri" id="servizi"></div>
 
@@ -75,10 +75,10 @@
 </main>
 
 <nav class="tab">
-  <a href="01-home.html" class="attivo"><span class="material-symbols-outlined">home</span>Home</a>
-  <a href="02-servizi.html"><span class="material-symbols-outlined">list</span>Servizi</a>
-  <a href="04-data-e-ora.html"><span class="material-symbols-outlined">calendar_month</span>Prenotazioni</a>
-  <a href="09-profilo.html"><span class="material-symbols-outlined">person</span>Profilo</a>
+  <a href="01-home.html" class="attivo"><span class="material-symbols-outlined" aria-hidden="true">home</span>Home</a>
+  <a href="02-servizi.html"><span class="material-symbols-outlined" aria-hidden="true">list</span>Servizi</a>
+  <a href="04-data-e-ora.html"><span class="material-symbols-outlined" aria-hidden="true">calendar_month</span>Prenotazioni</a>
+  <a href="09-profilo.html"><span class="material-symbols-outlined" aria-hidden="true">person</span>Profilo</a>
 </nav>
 
 <script src="assets/config.js"></script>
@@ -94,7 +94,7 @@ const $ = s => document.querySelector(s);
   /* promozione */
   if(d.promo && d.promo.attiva && d.promo.testo){
     $("#promo").innerHTML =
-      `<div class="promo"><span class="material-symbols-outlined">local_offer</span>
+      `<div class="promo"><span class="material-symbols-outlined" aria-hidden="true">local_offer</span>
        ${ROPE.esc(d.promo.testo)}</div>`;
   }
 

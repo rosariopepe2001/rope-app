@@ -32,11 +32,11 @@
 <header class="top">
   <span style="min-width:44px"></span>
   <img class="logo" src="assets/rope-mark.png" alt="ROPE" style="height:26px">
-  <a href="01-home.html" aria-label="Chiudi"><span class="material-symbols-outlined">close</span></a>
+  <a href="01-home.html" aria-label="Chiudi"><span class="material-symbols-outlined" aria-hidden="true">close</span></a>
 </header>
 
 <main>
-  <div class="cerchio"><span class="material-symbols-outlined">check</span></div>
+  <div class="cerchio"><span class="material-symbols-outlined" aria-hidden="true">check</span></div>
   <h1 class="ok">Prenotazione<br>confermata</h1>
   <p class="quando" id="quando"></p>
 
@@ -90,9 +90,9 @@ const $ = s => document.querySelector(s);
       <div class="v">${ROPE.esc(az.orari)}</div></div></div>` : ''}
     <div class="contatti">
       ${az.telefono ? `<a class="btn" href="tel:${ROPE.esc(tel)}">
-        <span class="material-symbols-outlined">call</span>Chiama</a>` : ''}
+        <span class="material-symbols-outlined" aria-hidden="true">call</span>Chiama</a>` : ''}
       ${az.whatsapp ? `<a class="btn" href="https://wa.me/${ROPE.esc(tel.replace('+',''))}" target="_blank" rel="noopener">
-        <span class="material-symbols-outlined">chat</span>WhatsApp</a>` : ''}
+        <span class="material-symbols-outlined" aria-hidden="true">chat</span>WhatsApp</a>` : ''}
     </div>`;
 
   $("#indicazioni").addEventListener('click', () => {

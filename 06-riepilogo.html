@@ -38,7 +38,7 @@
 <body>
 
 <header class="top">
-  <a href="05-la-tua-auto.html" aria-label="Indietro"><span class="material-symbols-outlined">arrow_back</span></a>
+  <a href="05-la-tua-auto.html" aria-label="Indietro"><span class="material-symbols-outlined" aria-hidden="true">arrow_back</span></a>
   <span class="titolo">Riepilogo</span>
   <span style="min-width:44px"></span>
 </header>
@@ -115,7 +115,7 @@ let pagamento = 'sede';
   $("#conto").innerHTML =
     righe.map(r => `<div class="conto"><span class="c">${ROPE.esc(r.n)}</span><span>${r.p}</span></div>`).join('') +
     `<div class="totale-riga"><span class="t">Totale</span><span class="n">${tot.testo}</span></div>` +
-    (tot.suRichiesta ? '<div class="nota"><span class="material-symbols-outlined">info</span>' +
+    (tot.suRichiesta ? '<div class="nota"><span class="material-symbols-outlined" aria-hidden="true">info</span>' +
       '<span>Ti ricontattiamo per confermare il preventivo.</span></div>' : '');
   $("#tot").textContent = tot.testo;
 
@@ -150,12 +150,24 @@ $("#conferma").addEventListener('click', async () => {
     inviata = esito.inviata;
   }catch(err){
     btn.disabled = false; btn.textContent = 'Conferma';
-    const box = document.createElement('div');
-    box.className = 'nota';
-    box.style.color = '#E8807A';
-    box.innerHTML = '<span class="material-symbols-outlined">error</span>' +
-      '<span>Non siamo riusciti a inviare la prenotazione. Controlla la connessione e riprova.</span>';
-    $("#pagamenti").after(box);
+
+    // un solo riquadro, riusato: prima se ne aggiungeva uno a ogni tentativo
+    let box = $("#errore-invio");
+    if(!box){
+      box = document.createElement('div');
+      box.id = 'errore-invio';
+      box.className = 'nota';
+      box.style.color = '#E8807A';
+      box.setAttribute('role', 'alert');
+      $("#pagamenti").after(box);
+    }
+    const occupato = err.motivo === 'occupato';
+    box.innerHTML = '<span class="material-symbols-outlined" aria-hidden="true">error</span>' +
+      '<span>' + ROPE.esc(occupato ? err.message
+        : 'Non siamo riusciti a inviare la prenotazione. Controlla la connessione e riprova.') +
+      (occupato ? ' <a href="04-data-e-ora.html" style="color:var(--accent)">Scegli un altro orario</a>' : '') +
+      '</span>';
+    box.scrollIntoView({block:'center', behavior:'smooth'});
     return;
   }
 

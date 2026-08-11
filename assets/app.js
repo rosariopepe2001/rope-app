@@ -120,8 +120,28 @@ window.ROPE = (function(){
     return !!(c.URL && c.CHIAVE_PUBBLICA);
   }
 
+  /* Fra quando il cliente sceglie l'ora e quando conferma passano minuti:
+     nel frattempo un altro cliente, o il pannello di gestione, può aver
+     preso lo stesso posto. Ultimo controllo prima di scrivere. */
+  async function ancoraLibero(s){
+    if(!s.dataISO || !s.ora || !s.pacchettoId || !s.livelloId) return true;
+    const data = new Date(s.dataISO + 'T00:00:00');
+    const quanti = giorniDi(s.pacchettoId, s.livelloId);
+    if(quanti > 1) return giorniLiberi(data, quanti);
+    const slot = await slotLiberi(data, durataPerGiorno(s.pacchettoId, s.livelloId, data));
+    const trovato = slot.find(x => x.ora === s.ora);
+    return !!(trovato && trovato.libero);
+  }
+
   async function inviaPrenotazione(s){
     if(!collegato()) return {inviata:false, motivo:'non collegato'};
+
+    if(!(await ancoraLibero(s))){
+      const e = new Error("Quell'orario è appena stato preso. Scegline un altro, ci vuole un attimo.");
+      e.motivo = 'occupato';
+      throw e;
+    }
+
     const c = window.ROPE_CONFIG;
     const t = s.pacchettoId ? trovaLivello(s.pacchettoId, s.livelloId) : null;
     const riga = {
@@ -401,7 +421,7 @@ window.ROPE = (function(){
   return {carica, usaDati, esc, taglia, impostaTaglia, tagliaOggetto, selezione, salvaSelezione,
           aggiorna, azzera, trovaLivello, trovaExtra, prezzoDi, testoPrezzo, euro,
           totale, disegnaChipsTaglia, testoSpiegaTaglia,
-          storico, aggiungiAStorico, mieAuto, collegato, inviaPrenotazione,
+          storico, aggiungiAStorico, mieAuto, collegato, inviaPrenotazione, ancoraLibero,
           giornoChiuso, slotLiberi, giorniLiberi, durataDi, giorniDi, dataISO,
           durataPerGiorno, minutiLavorabili,
           get dati(){ return dati; }};
