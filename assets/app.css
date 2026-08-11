@@ -15,8 +15,12 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:var(--body);
      display:inline-block;white-space:nowrap;word-wrap:normal;direction:ltr}
 
 /* barra in alto */
+/* height + padding tengono conto della zona di sicurezza in cima:
+   sull'iPhone, dentro l'app, senza questo il logo finisce sotto l'orologio */
 .top{position:sticky;top:0;z-index:50;background:var(--bg);border-bottom:1px solid var(--border);
-     height:64px;padding:0 20px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+     height:calc(64px + env(safe-area-inset-top));
+     padding:env(safe-area-inset-top) 20px 0;
+     display:flex;align-items:center;justify-content:space-between;gap:12px}
 .top img.logo{height:24px;width:auto}
 .top .titolo{font-family:var(--headline);font-size:13px;letter-spacing:.16em;
              text-transform:uppercase;font-weight:600}

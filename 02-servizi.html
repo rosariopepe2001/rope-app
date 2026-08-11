@@ -24,8 +24,11 @@
        font-style:normal;line-height:1;letter-spacing:normal;text-transform:none;
        display:inline-block;white-space:nowrap;word-wrap:normal;direction:ltr}
 
+  /* la zona di sicurezza in cima: dentro l'app il logo finirebbe sotto l'orologio */
   header{position:sticky;top:0;z-index:50;background:var(--bg);
-         border-bottom:1px solid var(--border);height:64px;padding:0 20px;
+         border-bottom:1px solid var(--border);
+         height:calc(64px + env(safe-area-inset-top));
+         padding:env(safe-area-inset-top) 20px 0;
          display:flex;align-items:center;justify-content:space-between}
   header img{height:24px;width:auto}
   header button{background:none;border:none;color:var(--text);cursor:pointer;
