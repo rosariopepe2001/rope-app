@@ -1,4 +1,27 @@
 /* Stile comune delle schermate ROPE collegate ai dati */
+
+/* I caratteri stanno DENTRO l'app, non su internet.
+   Prima arrivavano da Google a ogni avvio: senza rete, o con rete lenta,
+   al posto delle icone comparivano le parole ("arrow_back", "home") e i
+   testi ballavano. Così partono subito, funzionano offline e l'app non
+   chiama più nessun server esterno.
+   Le icone sono solo quelle che usiamo davvero: 5 KB invece di 313. */
+@font-face{font-family:'Sora';font-style:normal;font-weight:500;font-display:swap;
+           src:url(font/sora-500.woff2) format('woff2')}
+@font-face{font-family:'Sora';font-style:normal;font-weight:600;font-display:swap;
+           src:url(font/sora-600.woff2) format('woff2')}
+@font-face{font-family:'Sora';font-style:normal;font-weight:700;font-display:swap;
+           src:url(font/sora-700.woff2) format('woff2')}
+@font-face{font-family:'Inter';font-style:normal;font-weight:400;font-display:swap;
+           src:url(font/inter-400.woff2) format('woff2')}
+@font-face{font-family:'Inter';font-style:normal;font-weight:500;font-display:swap;
+           src:url(font/inter-500.woff2) format('woff2')}
+@font-face{font-family:'Inter';font-style:normal;font-weight:600;font-display:swap;
+           src:url(font/inter-600.woff2) format('woff2')}
+/* block, non swap: meglio un attimo di vuoto che vedere scritto "arrow_back" */
+@font-face{font-family:'Material Symbols Outlined';font-style:normal;font-weight:400;
+           font-display:block;src:url(font/icone.woff2) format('woff2')}
+
 :root{
   --bg:#0A0A0B; --surface:#16161A; --surface-2:#1D1D22; --border:#26262C;
   --text:#F2F2F4; --text-2:#A0A0A8; --accent:#D4D7DC;

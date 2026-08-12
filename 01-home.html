@@ -4,10 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>ROPE Car Detailing — Home</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
 <link href="assets/app.css" rel="stylesheet">
 <style>
   .saluto{font-family:var(--headline);font-size:28px;font-weight:700;margin:0}
@@ -37,6 +33,17 @@
   .lavoro:hover{border-color:var(--accent)}
   .lavoro:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   .lavoro img{width:100%;height:100%;object-fit:cover;display:block}
+
+  /* Mentre l'app legge i dati non deve raccontare bugie: prima scriveva
+     subito "Nessun appuntamento" anche a chi ne aveva uno, e cambiava un
+     attimo dopo. Ora al posto del testo c'è una barretta che respira. */
+  .scheletro{display:inline-block;color:transparent!important;border-radius:7px;
+             background:var(--surface-2);animation:respira 1.4s ease-in-out infinite;
+             user-select:none;min-height:1em;vertical-align:middle}
+  .scheletro *{visibility:hidden}
+  .mini.scheletro,.lavoro.scheletro{border-color:var(--border);animation:respira 1.4s ease-in-out infinite}
+  @keyframes respira{0%,100%{opacity:.5}50%{opacity:.85}}
+  @media (prefers-reduced-motion:reduce){.scheletro{animation:none;opacity:.6}}
   .lavoro .cap{position:absolute;left:0;right:0;bottom:0;padding:14px;
                background:linear-gradient(transparent,rgba(10,10,11,.92));font-size:13px;font-weight:600}
 </style>
@@ -57,9 +64,9 @@
   <div id="promo"></div>
 
   <div class="appunt">
-    <h3 id="app-titolo">Nessun appuntamento</h3>
+    <h3 id="app-titolo" class="scheletro" style="width:62%">Carico…</h3>
     <div class="riga"><span class="material-symbols-outlined" aria-hidden="true">event</span>
-      <span id="app-quando">Prenota il tuo primo trattamento</span></div>
+      <span id="app-quando" class="scheletro" style="width:52%">Carico…</span></div>
     <a class="btn primario pieno" href="02-servizi.html" style="margin-top:18px">Prenota un servizio</a>
   </div>
 
@@ -94,10 +101,29 @@
 <script>
 const $ = s => document.querySelector(s);
 
+/* Riquadri vuoti che respirano finché i dati non arrivano: così si vede
+   subito la forma della pagina, invece del nero e di scritte sbagliate. */
+function scheletri(){
+  $("#servizi").innerHTML = '<div class="mini scheletro" aria-hidden="true"></div>'.repeat(2);
+  $("#lavori").innerHTML  = '<div class="lavoro scheletro" aria-hidden="true"></div>'.repeat(2);
+}
+function fineScheletro(elemento){
+  elemento.classList.remove('scheletro');
+  elemento.style.width = '';
+}
+scheletri();
+
 (async function(){
   let d;
   try{ d = await ROPE.carica(); }
-  catch(e){ $("#servizi").innerHTML = '<p class="vuoto">Servizi non disponibili.</p>'; return; }
+  catch(e){
+    $("#servizi").innerHTML = '<p class="vuoto">Servizi non disponibili.</p>';
+    $("#lavori").innerHTML = '';
+    fineScheletro($("#app-titolo")); fineScheletro($("#app-quando"));
+    $("#app-titolo").textContent = 'Nessun appuntamento';
+    $("#app-quando").textContent = 'Riprova quando torna la connessione';
+    return;
+  }
 
   /* promozione */
   if(d.promo && d.promo.attiva && d.promo.testo){
@@ -116,6 +142,7 @@ const $ = s => document.querySelector(s);
 
   async function mostraProssimo(){
     const v = await ROPE.prossimoAppuntamento();
+    fineScheletro($("#app-titolo")); fineScheletro($("#app-quando"));
     if(!v){
       $("#app-titolo").textContent = 'Nessun appuntamento';
       $("#app-quando").textContent = 'Prenota il tuo primo trattamento';
@@ -158,6 +185,7 @@ const $ = s => document.querySelector(s);
   const copertina = l => (Array.isArray(l.foto) ? l.foto.filter(Boolean)[0]
                                                 : l.foto) || l.dopo || l.prima || "";
   const album = d.galleria.filter(l => copertina(l));
+  g.innerHTML = "";                 // via i segnaposto del caricamento
   if(!album.length){
     g.innerHTML = '<p class="vuoto" style="padding:24px 0;font-size:14px">' +
                   'Nessun lavoro pubblicato ancora.</p>';

@@ -4,10 +4,22 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>ROPE — Pannello di gestione</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+  /* i caratteri stanno qui dentro, non su internet: il pannello si apre
+     subito anche con la rete lenta, e non chiama nessun server esterno */
+  @font-face{font-family:'Sora';font-style:normal;font-weight:500;font-display:swap;
+             src:url(assets/font/sora-500.woff2) format('woff2')}
+  @font-face{font-family:'Sora';font-style:normal;font-weight:600;font-display:swap;
+             src:url(assets/font/sora-600.woff2) format('woff2')}
+  @font-face{font-family:'Sora';font-style:normal;font-weight:700;font-display:swap;
+             src:url(assets/font/sora-700.woff2) format('woff2')}
+  @font-face{font-family:'Inter';font-style:normal;font-weight:400;font-display:swap;
+             src:url(assets/font/inter-400.woff2) format('woff2')}
+  @font-face{font-family:'Inter';font-style:normal;font-weight:500;font-display:swap;
+             src:url(assets/font/inter-500.woff2) format('woff2')}
+  @font-face{font-family:'Inter';font-style:normal;font-weight:600;font-display:swap;
+             src:url(assets/font/inter-600.woff2) format('woff2')}
+
   :root{
     --bg:#0A0A0B; --surface:#16161A; --surface-2:#1D1D22; --border:#26262C;
     --text:#F2F2F4; --text-2:#A0A0A8; --accent:#D4D7DC; --danger:#E8807A; --ok:#7FBF9A;
@@ -67,7 +79,7 @@
   .album-riga{display:flex;align-items:center;gap:8px;margin-bottom:10px}
   .album-riga .riga{flex:1 1 auto;margin-bottom:0;min-width:0}
   .album-riga .frecce{display:flex;flex-direction:column;gap:4px;flex:0 0 auto}
-  .album-riga .frecce button{min-height:34px;min-width:44px;border-radius:10px;
+  .album-riga .frecce button{min-height:44px;min-width:44px;border-radius:10px;
         border:1px solid var(--border);background:var(--surface-2);color:var(--text);
         cursor:pointer;font-size:14px;line-height:1}
   .album-riga .frecce button:disabled{opacity:.35;cursor:not-allowed}
@@ -95,7 +107,7 @@
   .foto-elenco .et{display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;
         color:var(--accent);margin-top:5px;text-align:center;min-height:13px}
   .foto-elenco .comandi{display:flex;gap:6px;margin-top:6px}
-  .foto-elenco .comandi button{flex:1;min-height:34px;border-radius:9px;border:1px solid var(--border);
+  .foto-elenco .comandi button{flex:1;min-height:44px;border-radius:9px;border:1px solid var(--border);
         background:var(--surface-2);color:var(--text);cursor:pointer;font-size:13px;line-height:1}
   .foto-elenco .comandi button:disabled{opacity:.35;cursor:not-allowed}
   .foto-elenco .comandi button:hover:not(:disabled){border-color:var(--accent)}
