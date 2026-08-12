@@ -238,8 +238,55 @@ window.ROPE_ACCOUNT = (function(){
     }
   }
 
+  /* ---- Google con la finestra di sistema (dentro l'app) ----
+     È la strada buona sull'iPhone: si apre il riquadro di Google gestito
+     da iOS, come per Apple. Il cliente vede il nome dell'app, non
+     l'indirizzo di Supabase, e non passa da nessun browser.
+
+     Torna null se non è configurato (manca GOOGLE_IOS in config.js):
+     in quel caso si ripiega sul browser, che funziona comunque. */
+  async function conGoogleNativo(){
+    const p = moduli();
+    const SL = p.SocialLogin;
+    const idApp = (window.ROPE_CONFIG || {}).GOOGLE_IOS;
+    if(!SL || !idApp) return null;
+
+    try{
+      await SL.initialize({google: {iOSClientId: idApp}});
+    }catch(e){ return null; }
+
+    /* numero usa e getta: lo diamo a Google e lo ridiamo a Supabase,
+       così un vecchio gettone non si può riusare */
+    const usaEGetta = nonceCasuale();
+    let esito;
+    try{
+      esito = await SL.login({provider: "google",
+                              options: {scopes: ["email", "profile"], nonce: usaEGetta}});
+    }catch(e){
+      const testo = String((e && (e.message || e.code)) || "");
+      const annullato = /cancel|annull|closed|-5/i.test(testo);
+      throw new Error(annullato ? "Accesso annullato." : "Google non ha risposto. Riprova.");
+    }
+
+    const gettone = esito && esito.result && esito.result.idToken;
+    if(!gettone) throw new Error("Google non ha restituito l'accesso. Riprova.");
+
+    const o = await chiama("/auth/v1/token?grant_type=id_token",
+                           {provider: "google", id_token: gettone, nonce: usaEGetta});
+    ricorda(o);
+    await aggiornaDaServer();
+    if(!sessione) throw new Error("Google non ci ha fatto entrare. Riprova.");
+    return sessione;
+  }
+
   async function conGoogle(){
     if(!BASE || !PUB) throw new Error("Collegamento non configurato.");
+
+    if(dentroApp()){
+      const s = await conGoogleNativo();
+      if(s) return s;              // se null: non configurato, si prova col browser
+    }
+
     const indirizzo = BASE + "/auth/v1/authorize?provider=google&redirect_to="
                     + encodeURIComponent(indirizzoDiRitorno());
 
