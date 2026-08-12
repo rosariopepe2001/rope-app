@@ -40,7 +40,19 @@
     "whatsapp": "+39 3277494672",
     "indirizzo": "Località Calabri, 18 Caggiano "
   },
-  "galleria": [],
+  "galleria": [
+    {
+      "id": "g1786556036332",
+      "auto": "Fiat Punto 188 Sporting",
+      "foto": [
+        "https://pwewrieenkrujfehjcxs.supabase.co/storage/v1/object/public/foto/1786556059785-IMG_2442-3.jpg",
+        "https://pwewrieenkrujfehjcxs.supabase.co/storage/v1/object/public/foto/1786556064974-IMG_2442.jpg",
+        "https://pwewrieenkrujfehjcxs.supabase.co/storage/v1/object/public/foto/1786556054947-IMG_2442-2.jpg"
+      ],
+      "nota": "Ceramic Ultra Speed Wax Maniac Line",
+      "servizio": "Effetto Beading"
+    }
+  ],
   "pacchetti": [
     {
       "id": "p-interno",
@@ -101,14 +113,15 @@
           "attivo": true,
           "durata": "",
           "prezzi": {
-            "l": 80,
-            "m": 70,
-            "s": 60,
-            "xl": 90
+            "l": 50,
+            "m": 40,
+            "s": 30,
+            "xl": 60
           },
           "titolo": "Pulizia Interni",
           "evidenza": false,
           "descrizione": "Un trattamento completo pensato per rinfrescare e valorizzare l’abitacolo della tua auto.\n\nIl servizio comprende l’aspirazione approfondita degli interni e del bagagliaio, insieme alla pulizia delle principali superfici accessibili, per eliminare polvere e sporco e restituire all’ambiente un aspetto ordinato e curato.\n\nLa soluzione ideale per chi desidera interni puliti e impeccabili, con un servizio rapido ed efficace.",
+          "suRichiesta": false,
           "durataGiorni": 1,
           "durataMinuti": 120
         },
@@ -118,14 +131,15 @@
           "attivo": true,
           "durata": "",
           "prezzi": {
-            "l": 150,
-            "m": 120,
-            "s": 90,
-            "xl": 180
+            "l": 120,
+            "m": 90,
+            "s": 60,
+            "xl": 150
           },
           "titolo": "Pulizia Profonda Interni",
           "evidenza": false,
           "descrizione": "Un trattamento completo dedicato alla cura approfondita dell’abitacolo.\n\nOgni zona viene pulita con particolare attenzione, intervenendo anche negli spazi più nascosti e difficili da raggiungere, per ottenere un risultato preciso e curato in ogni dettaglio.\n\nIl servizio comprende inoltre l’applicazione di un protettivo specifico su plastiche e cruscotto, studiato per contrastare gli effetti dei raggi UV e preservare le superfici nel tempo, lasciando una piacevole finitura satinata e un aspetto rinnovato.",
+          "suRichiesta": false,
           "durataGiorni": 1,
           "durataMinuti": 180
         }

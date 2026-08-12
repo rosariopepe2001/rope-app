@@ -76,6 +76,15 @@
         background:var(--bg);border:1px solid var(--border)}
   .mini.senza{display:flex;align-items:center;justify-content:center;
         color:var(--danger);font-size:11px;text-align:center;line-height:1.2}
+  /* filtri a pillola (storico) */
+  .scelte{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .scelte button{min-height:44px;padding:0 16px;border-radius:99px;border:1px solid var(--border);
+        background:var(--surface);color:var(--text-2);cursor:pointer;font-family:var(--body);
+        font-size:14px;transition:background .2s,color .2s,border-color .2s}
+  .scelte button[aria-pressed="true"]{background:var(--accent);color:var(--bg);
+        border-color:var(--accent);font-weight:600}
+  .scelte button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
   /* le foto di un lavoro, dentro la finestra */
   .foto-elenco{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:12px}
   .foto-elenco:empty{display:none}
@@ -238,6 +247,7 @@
 
 <nav role="tablist" aria-label="Sezioni">
   <button role="tab" id="tab-prenotazioni" aria-selected="true" aria-controls="p-prenotazioni">Prenotazioni</button>
+  <button role="tab" id="tab-storico"   aria-selected="false" aria-controls="p-storico">Storico</button>
   <button role="tab" id="tab-auto"      aria-selected="false" aria-controls="p-auto">Auto</button>
   <button role="tab" id="tab-pacchetti" aria-selected="false" aria-controls="p-pacchetti">Pacchetti</button>
   <button role="tab" id="tab-taglie"    aria-selected="false" aria-controls="p-taglie">Taglie</button>
@@ -256,6 +266,17 @@
     <button class="btn pieno" id="ricarica-pren" style="margin-top:8px">Aggiorna</button>
     <p class="sub" id="pren-aggiornato" style="text-align:center;margin:10px 0 0;font-size:12px"
        role="status" aria-live="polite">Si aggiorna da solo.</p>
+  </section>
+
+  <section id="p-storico" role="tabpanel" aria-labelledby="tab-storico" hidden>
+    <h2>Storico prenotazioni</h2>
+    <p class="sub">Tutto quello che è passato di qui, dalla più recente.</p>
+    <label for="cerca-storico">Cerca</label>
+    <input type="text" id="cerca-storico" placeholder="cliente, targa, servizio o codice"
+           autocomplete="off" spellcheck="false">
+    <div class="scelte" id="filtri-storico" role="group" aria-label="Filtra per stato"></div>
+    <p class="sub" id="conto-storico" style="margin:16px 0 0" role="status" aria-live="polite"></p>
+    <div id="lista-storico" style="margin-top:12px"><p class="vuoto">Carico…</p></div>
   </section>
 
   <section id="p-auto" role="tabpanel" aria-labelledby="tab-auto" hidden>
@@ -800,7 +821,8 @@ async function caricaPrenotazioni(silenzioso){
 
   const p = out.prenotazioni || [];
   prenotazioniViste = p;
-  disegnaAuto();                       // lo storico auto legge le stesse righe
+  disegnaStorico();                    // storico e auto leggono le stesse righe
+  disegnaAuto();
   segnaOraAggiornamento();
 
   /* cambiato qualcosa? se no, si lascia tutto com'è */
@@ -828,28 +850,37 @@ async function caricaPrenotazioni(silenzioso){
      consultabili in fondo, dalla più recente: senza questo, col tempo apri
      il pannello e vedi solo lavori di mesi fa. */
   const oggi = ROPE.dataISO(new Date());
-  const future  = p.filter(v => !v.data_app || v.data_app >= oggi)
-                   .sort((a,b) => String(a.data_app||'').localeCompare(String(b.data_app||''))
-                                  || String(a.ora||'').localeCompare(String(b.ora||'')));
-  const passate = p.filter(v => v.data_app && v.data_app < oggi);   // già dalla più recente
+  const future = p.filter(v => !v.data_app || v.data_app >= oggi)
+                  .sort((a,b) => String(a.data_app||'').localeCompare(String(b.data_app||''))
+                                 || String(a.ora||'').localeCompare(String(b.ora||'')));
 
-  [...future, ...passate].forEach((v, indice) => {
-    if(indice === future.length && passate.length){
-      const sep = document.createElement('div');
-      sep.className = 'gruppo';
-      sep.style.marginTop = '26px';
-      sep.textContent = 'Già passate';
-      c.appendChild(sep);
-    }
+  if(!future.length){
+    c.innerHTML = '<p class="vuoto">Niente in programma.<br>' +
+      '<span style="font-size:13px">Quelle già passate sono nello Storico.</span></p>';
+    return;
+  }
+
+  future.forEach(v => c.appendChild(schedaPrenotazione(v, appenaArrivate.has(v.id))));
+
+  const nota = document.createElement('p');
+  nota.className = 'vuoto';
+  nota.style.cssText = 'padding:18px 0 0;font-size:13px';
+  nota.textContent = 'Le prenotazioni già passate sono nella scheda Storico.';
+  c.appendChild(nota);
+}
+
+/* La scheda di una prenotazione, con i pulsanti per aggiornarla.
+   La usano sia "Prenotazioni" sia "Storico". */
+function schedaPrenotazione(v, appenaArrivata){
     const st = STATI[v.stato] || STATI.nuova;
     const auto = v.auto || {};
     const extra = (v.extra||[]).map(e => e.nome).filter(Boolean);
     const box = document.createElement('div');
-    box.className = 'pacchetto' + (appenaArrivate.has(v.id) ? ' appena-arrivata' : '');
+    box.className = 'pacchetto' + (appenaArrivata ? ' appena-arrivata' : '');
     box.innerHTML = `
       <div class="cima">
         <div><h3>${esc(v.cliente_nome || 'Cliente')}${
-          appenaArrivate.has(v.id) ? ' <span class="tag on">appena arrivata</span>' : ''}</h3>
+          appenaArrivata ? ' <span class="tag on">appena arrivata</span>' : ''}</h3>
           <div class="st">${esc(v.servizio || '')}${v.taglia ? ' · ' + esc(String(v.taglia).toUpperCase()) : ''}</div></div>
         <span class="tag ${st.c}">${st.n}</span>
       </div>
@@ -918,8 +949,7 @@ async function caricaPrenotazioni(silenzioso){
     azioni.appendChild(elimina);
 
     box.appendChild(azioni);
-    c.appendChild(box);
-  });
+    return box;
 }
 
 $("#ricarica-pren").addEventListener('click', () => caricaPrenotazioni());
@@ -943,6 +973,80 @@ document.addEventListener('visibilitychange', () => {
   else fermaControllo();
 });
 window.addEventListener('focus', controlla);
+
+/* ---------- storico delle prenotazioni ----------
+   Tutte quante, dalla più recente: si cerca per cliente, targa,
+   servizio o codice, e si filtra per stato. */
+let cercaStorico = "", statoStorico = "tutte";
+
+const FILTRI_STORICO = [
+  ['tutte',      'Tutte'],
+  ['completata', 'Completate'],
+  ['confermata', 'Confermate'],
+  ['nuova',      'In attesa'],
+  ['annullata',  'Annullate']
+];
+
+function disegnaFiltriStorico(){
+  const c = $("#filtri-storico");
+  if(!c || c.children.length) return;         // si costruiscono una volta sola
+  FILTRI_STORICO.forEach(([id, nome]) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.textContent = nome;
+    b.setAttribute('aria-pressed', id === statoStorico);
+    b.addEventListener('click', () => {
+      statoStorico = id;
+      [...c.children].forEach(x => x.setAttribute('aria-pressed', x === b));
+      disegnaStorico();
+    });
+    c.appendChild(b);
+  });
+}
+
+function disegnaStorico(){
+  const c = $("#lista-storico");
+  if(!c) return;
+  disegnaFiltriStorico();
+
+  /* dalla più recente: prima la data dell'appuntamento, e a parità
+     quella in cui è stata scritta */
+  let elenco = (prenotazioniViste || []).slice().sort((a,b) =>
+    String(b.data_app || '').localeCompare(String(a.data_app || '')) ||
+    String(b.ora || '').localeCompare(String(a.ora || '')) ||
+    String(b.creata_il || '').localeCompare(String(a.creata_il || '')));
+
+  if(statoStorico !== 'tutte') elenco = elenco.filter(v => (v.stato || 'nuova') === statoStorico);
+
+  if(cercaStorico){
+    const q = cercaStorico.toLowerCase();
+    elenco = elenco.filter(v => {
+      const a = v.auto || {};
+      return [v.cliente_nome, v.cliente_tel, v.servizio, v.pacchetto, v.codice,
+              v.data_app, a.targa, a.marca, a.modello, v.note]
+        .filter(Boolean).join(' ').toLowerCase().includes(q);
+    });
+  }
+
+  const conto = $("#conto-storico");
+  if(conto) conto.textContent = elenco.length
+    ? elenco.length + (elenco.length === 1 ? ' prenotazione' : ' prenotazioni')
+    : '';
+
+  if(!elenco.length){
+    c.innerHTML = '<p class="vuoto">' + ((cercaStorico || statoStorico !== 'tutte')
+      ? 'Nessuna prenotazione con questi filtri.'
+      : 'Ancora niente nello storico.') + '</p>';
+    return;
+  }
+
+  c.innerHTML = "";
+  elenco.forEach(v => c.appendChild(schedaPrenotazione(v, false)));
+}
+
+$("#cerca-storico").addEventListener('input', e => {
+  cercaStorico = e.target.value.trim();
+  disegnaStorico();
+});
 
 /* ---------- storico delle auto ----------
    Ricavato dalle prenotazioni: ogni auto con tutti i lavori che ha

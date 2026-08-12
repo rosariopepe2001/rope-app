@@ -156,6 +156,137 @@ window.ROPE_ACCOUNT = (function(){
     return sessione;
   }
 
+  /* ---------- Accedi con Google ----------
+     Google non ha una finestra di sistema come Apple. Si apre la sua
+     pagina nel browser sicuro del telefono; quando lui ha finito,
+     Google torna a Supabase e Supabase riporta dentro l'app con un
+     indirizzo che è solo nostro (com.rosariopepe.rope://accesso),
+     portandosi dietro il gettone di accesso.
+
+     Nel browser normale funziona uguale: si torna sulla stessa pagina.
+     Niente chiavi segrete qui: il segreto di Google sta su Supabase. */
+  const SCHEMA_APP = "com.rosariopepe.rope";
+  const RITORNO_APP = SCHEMA_APP + "://accesso";
+
+  function dentroApp(){
+    const c = window.Capacitor;
+    return !!(c && c.isNativePlatform && c.isNativePlatform());
+  }
+  const googleDisponibile = () => !!(BASE && PUB);
+
+  function moduli(){
+    const c = window.Capacitor;
+    return (c && c.Plugins) || {};
+  }
+
+  function indirizzoDiRitorno(){
+    return dentroApp() ? RITORNO_APP : (location.origin + location.pathname);
+  }
+
+  /* Aggiorna nome, email e identificativo leggendoli da Supabase.
+     Con Google il nome arriva da lì, non lo scrive il cliente. */
+  async function aggiornaDaServer(){
+    try{
+      const r = await conAccount("/auth/v1/user");
+      if(!r.ok) return;
+      const u = await r.json();
+      const m = u.user_metadata || {};
+      sessione.id       = u.id    || sessione.id;
+      sessione.email    = u.email || sessione.email;
+      sessione.nome     = m.nome || m.full_name || m.name || sessione.nome;
+      sessione.telefono = m.telefono || sessione.telefono;
+      localStorage.setItem(MEMORIA, JSON.stringify(sessione));
+    }catch(e){ /* i dati si recuperano comunque alla prossima chiamata */ }
+  }
+
+  /* Legge il gettone dall'indirizzo di ritorno e apre la sessione. */
+  async function daIndirizzoDiRitorno(indirizzo){
+    let u;
+    try{ u = new URL(indirizzo); }catch(e){ return null; }
+    const pezzi = new URLSearchParams(String(u.hash || "").replace(/^#/, ""));
+    const query = u.searchParams;
+
+    const access  = pezzi.get("access_token");
+    const refresh = pezzi.get("refresh_token");
+    if(!access){
+      const guaio = pezzi.get("error_description") || query.get("error_description")
+                 || pezzi.get("error") || query.get("error");
+      if(guaio) throw new Error(/denied|cancel/i.test(guaio)
+        ? "Accesso annullato." : "Google non ci ha fatto entrare: " + guaio);
+      return null;                       // non era un ritorno da Google
+    }
+
+    ricorda({access_token: access, refresh_token: refresh,
+             expires_in: Number(pezzi.get("expires_in")) || 3600});
+    await aggiornaDaServer();
+    // se il gettone non vale niente, la sessione è già stata buttata via
+    if(!sessione) throw new Error("Google non ci ha fatto entrare. Riprova.");
+    return sessione;
+  }
+
+  /* Nel browser: se siamo appena tornati da Google, l'indirizzo porta
+     il gettone dietro il cancelletto. Si prende e si pulisce la barra. */
+  async function raccogliRitornoGoogle(){
+    if(!/access_token=|error=/.test(location.hash || "")) return null;
+    try{
+      const s = await daIndirizzoDiRitorno(location.href);
+      history.replaceState(null, "", location.pathname + location.search);
+      return s;
+    }catch(e){
+      history.replaceState(null, "", location.pathname + location.search);
+      throw e;
+    }
+  }
+
+  async function conGoogle(){
+    if(!BASE || !PUB) throw new Error("Collegamento non configurato.");
+    const indirizzo = BASE + "/auth/v1/authorize?provider=google&redirect_to="
+                    + encodeURIComponent(indirizzoDiRitorno());
+
+    if(!dentroApp()){
+      location.href = indirizzo;
+      return new Promise(() => {});      // la pagina se ne va: non torna niente
+    }
+
+    const p = moduli();
+    if(!p.Browser || !p.App)
+      throw new Error("L'accesso con Google non è disponibile in questa versione dell'app.");
+
+    return new Promise(async (ok, ko) => {
+      let chiuso = false;
+      const ascolti = [];
+      const smonta = () => ascolti.forEach(a => { try{ a.remove(); }catch(e){} });
+
+      ascolti.push(await p.App.addListener("appUrlOpen", async ({url}) => {
+        if(!url || url.indexOf(SCHEMA_APP + "://") !== 0) return;
+        chiuso = true;
+        smonta();
+        try{ await p.Browser.close(); }catch(e){}
+        try{
+          const s = await daIndirizzoDiRitorno(url);
+          if(s) ok(s);
+          else ko(new Error("Google non ha restituito l'accesso. Riprova."));
+        }catch(e){ ko(e); }
+      }));
+
+      // se chiude la finestra col dito, non deve restare tutto appeso
+      ascolti.push(await p.Browser.addListener("browserFinished", () => {
+        setTimeout(() => {
+          if(chiuso) return;
+          smonta();
+          ko(new Error("Accesso annullato."));
+        }, 400);
+      }));
+
+      try{
+        await p.Browser.open({url: indirizzo, presentationStyle: "popover"});
+      }catch(e){
+        smonta();
+        ko(new Error("Non riesco ad aprire Google. Riprova."));
+      }
+    });
+  }
+
   function esci(){
     const t = sessione && sessione.access_token;
     ricorda(null);
@@ -247,5 +378,6 @@ window.ROPE_ACCOUNT = (function(){
 
   return {registra, entra, esci, passwordDimenticata, token, dentro, chiSono,
           conAccount, aggiornaDati, eliminaAccount, serveAccesso,
-          appleDisponibile, conApple};
+          appleDisponibile, conApple,
+          googleDisponibile, conGoogle, raccogliRitornoGoogle};
 })();

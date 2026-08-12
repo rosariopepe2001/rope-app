@@ -17,6 +17,13 @@
            letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:600;
            border:1px solid var(--border);border-radius:99px;padding:5px 12px}
   .testo{color:var(--text-2);font-size:15px;line-height:1.65;white-space:pre-line;margin:20px 0 0}
+  /* Una descrizione lunga spingeva la scelta della taglia e gli extra
+     fuori dallo schermo: si accorcia, e chi vuole la apre. */
+  .testo.accorciata{display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden}
+  .leggi{background:none;border:none;color:var(--accent);font-family:var(--body);font-size:14px;
+         min-height:44px;padding:0;cursor:pointer;display:inline-flex;align-items:center;gap:4px}
+  .leggi:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+  .leggi .material-symbols-outlined{font-size:18px}
   .durata{display:inline-flex;align-items:center;gap:6px;margin-top:16px;font-size:14px;color:var(--text-2)}
   .durata .material-symbols-outlined{font-size:18px}
   .extra{display:flex;align-items:center;gap:14px;background:var(--surface);
@@ -60,7 +67,28 @@
 <script src="assets/app.js"></script>
 <script>
 const $ = s => document.querySelector(s);
-let pacchetto = null, livello = null;
+let pacchetto = null, livello = null, descrizioneAperta = false;
+
+/* Mostra "Leggi tutto" solo se il testo è davvero più lungo di quello
+   che si vede. Se l'aveva già aperto, resta aperto anche cambiando taglia. */
+function sistemaDescrizione(){
+  const t = $("#descrizione"), b = $("#leggi");
+  if(!t || !b) return;
+  if(descrizioneAperta){
+    t.classList.remove('accorciata');
+    b.hidden = false;
+    b.innerHTML = '<span class="material-symbols-outlined" aria-hidden="true">expand_less</span>Mostra meno';
+  }else{
+    t.classList.add('accorciata');
+    b.innerHTML = '<span class="material-symbols-outlined" aria-hidden="true">expand_more</span>Leggi tutto';
+    b.hidden = t.scrollHeight <= t.clientHeight + 2;   // ci sta tutto: niente pulsante
+  }
+  b.onclick = () => {
+    descrizioneAperta = !descrizioneAperta;
+    sistemaDescrizione();
+    if(!descrizioneAperta) t.scrollIntoView({block:'nearest', behavior:'smooth'});
+  };
+}
 
 (async function(){
   let d;
@@ -92,26 +120,34 @@ function disegna(){
   const sel = ROPE.selezione();
   const scelti = (sel.extra||[]).map(e => e.id);
 
+  /* La taglia sta in alto, prima della descrizione: è una scelta che
+     cambia il prezzo, e se finisce sotto un testo lungo il cliente
+     prenota senza averla nemmeno vista. */
   $("#contenuto").innerHTML = `
     <div class="pk">${ROPE.esc(pacchetto.nome)}</div>
     <h1 class="nome">${ROPE.esc(livello.titolo || livello.nome)}</h1>
     ${livello.nome ? `<span class="livello">${ROPE.esc(livello.nome)}</span>` : ''}
-    ${pacchetto.nota ? `<div class="nota"><span class="material-symbols-outlined" aria-hidden="true">info</span>
-       <span>${ROPE.esc(pacchetto.nota)}</span></div>` : ''}
-    ${livello.durata ? `<div class="durata">
-       <span class="material-symbols-outlined" aria-hidden="true">schedule</span>${ROPE.esc(livello.durata)}</div>` : ''}
-    ${livello.descrizione ? `<p class="testo">${ROPE.esc(livello.descrizione)}</p>` : ''}
 
-    <div class="selettore" style="margin-top:28px">
+    <div class="selettore" style="margin-top:22px">
       <div class="tit">La tua auto</div>
       <div class="chips" id="chips" role="group" aria-label="Taglia dell'auto"></div>
       <p class="spiega" id="spiega"></p>
     </div>
 
-    <div id="zona-extra"></div>`;
+    <div id="zona-extra"></div>
+
+    ${pacchetto.nota ? `<div class="nota"><span class="material-symbols-outlined" aria-hidden="true">info</span>
+       <span>${ROPE.esc(pacchetto.nota)}</span></div>` : ''}
+    ${livello.durata ? `<div class="durata">
+       <span class="material-symbols-outlined" aria-hidden="true">schedule</span>${ROPE.esc(livello.durata)}</div>` : ''}
+    ${livello.descrizione ? `<div class="sezione">Cosa comprende</div>
+      <p class="testo accorciata" id="descrizione" style="margin-top:0">${ROPE.esc(livello.descrizione)}</p>
+      <button class="leggi" id="leggi" type="button" hidden>
+        <span class="material-symbols-outlined" aria-hidden="true">expand_more</span>Leggi tutto</button>` : ''}`;
 
   ROPE.disegnaChipsTaglia('#chips', () => disegna());
   $("#spiega").innerHTML = ROPE.testoSpiegaTaglia();
+  sistemaDescrizione();
 
   const extra = (pacchetto.extra||[]).filter(x => x.attivo !== false);
   if(extra.length){
