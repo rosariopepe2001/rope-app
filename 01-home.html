@@ -31,13 +31,14 @@
   .mini .pz{font-family:var(--headline);font-weight:700;font-size:20px;color:var(--accent);margin-top:14px}
   .mini .pz span{font-family:var(--body);font-size:11px;font-weight:400;color:var(--text-2)}
   .lavoro{flex:0 0 200px;scroll-snap-align:start;border-radius:18px;overflow:hidden;
-          position:relative;aspect-ratio:4/5;background:var(--surface-2);border:1px solid var(--border)}
-  .lavoro img{width:100%;height:100%;object-fit:cover}
+          position:relative;aspect-ratio:4/5;background:var(--surface-2);border:1px solid var(--border);
+          padding:0;cursor:pointer;color:inherit;display:block;text-align:left;
+          transition:border-color .2s}
+  .lavoro:hover{border-color:var(--accent)}
+  .lavoro:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .lavoro img{width:100%;height:100%;object-fit:cover;display:block}
   .lavoro .cap{position:absolute;left:0;right:0;bottom:0;padding:14px;
                background:linear-gradient(transparent,rgba(10,10,11,.92));font-size:13px;font-weight:600}
-  .lavoro .bd{position:absolute;top:10px;left:10px;background:rgba(10,10,11,.8);
-              border:1px solid var(--border);border-radius:99px;padding:3px 9px;
-              font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
 </style>
 </head>
 <body>
@@ -70,7 +71,12 @@
   </div>
   <div class="scorri" id="servizi"></div>
 
-  <div class="sezione">I nostri lavori</div>
+  <div class="sezione" style="display:flex;justify-content:space-between;align-items:center">
+    <span>I nostri lavori</span>
+    <a href="08-galleria.html" style="color:var(--text-2);text-decoration:none;font-family:var(--body);
+       font-size:12px;letter-spacing:0;text-transform:none;display:inline-flex;align-items:center;
+       min-height:44px;padding:0 4px;margin:-10px -4px">Vedi l'album</a>
+  </div>
   <div class="scorri" id="lavori"></div>
 </main>
 
@@ -148,18 +154,20 @@ const $ = s => document.querySelector(s);
 
   /* galleria */
   const g = $("#lavori");
-  if(!d.galleria.length){
+  const fotoDi = l => l.foto || l.dopo || l.prima || "";
+  const album = d.galleria.filter(l => fotoDi(l));
+  if(!album.length){
     g.innerHTML = '<p class="vuoto" style="padding:24px 0;font-size:14px">' +
                   'Nessun lavoro pubblicato ancora.</p>';
   }else{
-    d.galleria.forEach(l => {
-      const div = document.createElement('div');
-      div.className = 'lavoro';
-      div.innerHTML = `${l.dopo ? `<img src="${ROPE.esc(l.dopo)}" alt="${ROPE.esc(l.auto||'Lavoro')}">` : ''}
-        <span class="bd">Prima / Dopo</span>
+    album.forEach(l => {
+      const b = document.createElement('button');
+      b.className = 'lavoro'; b.type = 'button';
+      b.innerHTML = `<img src="${ROPE.esc(fotoDi(l))}" alt="${ROPE.esc(l.auto||'Lavoro ROPE')}" loading="lazy">
         <div class="cap">${ROPE.esc(l.auto || '')}<br>
           <span style="font-weight:400;color:var(--text-2)">${ROPE.esc(l.servizio||'')}</span></div>`;
-      g.appendChild(div);
+      b.addEventListener('click', () => location.href = '08-galleria.html');
+      g.appendChild(b);
     });
   }
 })();

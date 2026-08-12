@@ -63,6 +63,19 @@
         width:100%;cursor:pointer;color:inherit;font:inherit;margin-bottom:10px;
         transition:border-color .2s}
   .riga:hover{border-color:var(--accent)}
+  /* album: la foto, e le frecce per decidere l'ordine */
+  .album-riga{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+  .album-riga .riga{flex:1 1 auto;margin-bottom:0;min-width:0}
+  .album-riga .frecce{display:flex;flex-direction:column;gap:4px;flex:0 0 auto}
+  .album-riga .frecce button{min-height:34px;min-width:44px;border-radius:10px;
+        border:1px solid var(--border);background:var(--surface-2);color:var(--text);
+        cursor:pointer;font-size:14px;line-height:1}
+  .album-riga .frecce button:disabled{opacity:.35;cursor:not-allowed}
+  .album-riga .frecce button:hover:not(:disabled){border-color:var(--accent)}
+  .mini{flex:0 0 auto;width:58px;height:58px;border-radius:10px;object-fit:cover;
+        background:var(--bg);border:1px solid var(--border)}
+  .mini.senza{display:flex;align-items:center;justify-content:center;
+        color:var(--danger);font-size:11px;text-align:center;line-height:1.2}
   .riga .corpo{flex:1 1 auto;min-width:0}
   .riga .nome{display:block;font-weight:600;font-size:16px;line-height:1.3}
   .riga .meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px;
@@ -361,12 +374,13 @@
   </section>
 
   <section id="p-galleria" role="tabpanel" aria-labelledby="tab-galleria" hidden>
-    <h2>I nostri lavori</h2>
-    <p class="sub">Le foto prima/dopo che i clienti vedono nella galleria.</p>
+    <h2>L'album dei lavori</h2>
+    <p class="sub">Le foto che i clienti vedono nella galleria: scegli tu quali mettere
+      e in che ordine. Una foto per lavoro, con l'auto e il servizio.</p>
     <div id="lista-galleria"></div>
     <button class="btn pieno" id="nuovo-lavoro" style="margin-top:8px">
       <svg class="icona" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-      Aggiungi lavoro
+      Aggiungi una foto
     </button>
   </section>
 
@@ -603,17 +617,11 @@
       <input type="text" id="l-servizio" placeholder="Trattamento Showroom">
       <label for="l-nota">Nota breve</label>
       <input type="text" id="l-nota" placeholder="Rimossi graffi profondi sul cofano">
-      <label for="l-prima">Foto PRIMA</label>
+      <label for="l-foto">Foto</label>
       <div class="foto">
-        <img id="l-prima-anteprima" alt="" hidden>
-        <span class="etichetta">Tocca per scegliere</span>
-        <input type="file" id="l-prima" accept="image/*" aria-label="Foto prima dell'intervento">
-      </div>
-      <label for="l-dopo">Foto DOPO</label>
-      <div class="foto">
-        <img id="l-dopo-anteprima" alt="" hidden>
-        <span class="etichetta">Tocca per scegliere</span>
-        <input type="file" id="l-dopo" accept="image/*" aria-label="Foto dopo l'intervento">
+        <img id="l-foto-anteprima" alt="" hidden>
+        <span class="etichetta">Tocca per scegliere la foto</span>
+        <input type="file" id="l-foto" accept="image/*" aria-label="Foto del lavoro">
       </div>
     </div>
     <div class="azioni">
@@ -1261,30 +1269,60 @@ function disegnaTaglie(){
 }
 
 /* ---------- galleria ---------- */
+/* La foto del lavoro. Le vecchie schede avevano prima/dopo: se ne trova
+   una, si tiene quella del "dopo" e l'album continua a funzionare. */
+const fotoLavoro = l => l.foto || l.dopo || l.prima || "";
+
 function disegnaGalleria(){
   const c = $("#lista-galleria"); c.innerHTML = "";
   if(!dati.galleria.length){
-    c.innerHTML = '<p class="vuoto">Nessun lavoro caricato.<br>Aggiungi le foto prima/dopo dei tuoi interventi.</p>'; return;
+    c.innerHTML = '<p class="vuoto">Album vuoto.<br>' +
+      'Aggiungi le foto dei lavori che vuoi far vedere ai clienti.</p>'; return;
   }
-  dati.galleria.forEach(l => {
+  dati.galleria.forEach((l, i) => {
+    const foto = fotoLavoro(l);
+
+    const riga = document.createElement('div');
+    riga.className = 'album-riga';
+
     const b = document.createElement('button');
     b.className = 'riga'; b.type = 'button';
-    b.innerHTML = `<span class="corpo">
+    b.innerHTML = `
+      ${foto ? `<img class="mini" src="${esc(foto)}" alt="">`
+             : '<span class="mini senza">foto<br>mancante</span>'}
+      <span class="corpo">
         <span class="nome">${esc(l.auto || 'Senza titolo')}</span>
-        <span class="meta">${esc(l.servizio||'')}
-          ${(l.prima && l.dopo) ? '<span class="tag on">Prima/Dopo</span>'
-                                : '<span class="tag off">Foto mancanti</span>'}
+        <span class="meta">${esc(l.servizio || 'servizio da scrivere')}
+          <span class="tag">${i + 1}ª nell'album</span>
         </span></span>`;
     b.addEventListener('click', () => apriLavoro(l));
-    c.appendChild(b);
+    riga.appendChild(b);
+
+    /* l'ordine lo decide lui: la prima foto è quella che si vede
+       per prima anche nel carosello della home */
+    const frecce = document.createElement('div');
+    frecce.className = 'frecce';
+    [['↑', -1, 'Sposta più in alto'], ['↓', 1, 'Sposta più in basso']].forEach(([segno, passo, aria]) => {
+      const f = document.createElement('button');
+      f.type = 'button'; f.textContent = segno; f.setAttribute('aria-label', aria);
+      f.disabled = (passo < 0 && i === 0) || (passo > 0 && i === dati.galleria.length - 1);
+      f.addEventListener('click', () => {
+        const g = dati.galleria;
+        [g[i], g[i + passo]] = [g[i + passo], g[i]];
+        disegnaGalleria(); segnaModificato();
+      });
+      frecce.appendChild(f);
+    });
+    riga.appendChild(frecce);
+
+    c.appendChild(riga);
   });
 }
 function apriLavoro(l){
   lavoroCorrente = l;
   $("#l-auto").value = l.auto || ""; $("#l-servizio").value = l.servizio || "";
   $("#l-nota").value = l.nota || "";
-  mostraAnteprima("#l-prima-anteprima", l.prima);
-  mostraAnteprima("#l-dopo-anteprima", l.dopo);
+  mostraAnteprima("#l-foto-anteprima", fotoLavoro(l));
   $("#dlg-lavoro").showModal();
 }
 $("#dlg-lavoro").addEventListener('close', () => {
@@ -1304,7 +1342,7 @@ $("#dlg-lavoro").addEventListener('close', () => {
   lavoroCorrente = null;
 });
 $("#nuovo-lavoro").addEventListener('click', () => {
-  const l = {id:'g'+Date.now(), auto:"", servizio:"", nota:"", prima:"", dopo:""};
+  const l = {id:'g'+Date.now(), auto:"", servizio:"", nota:"", foto:""};
   dati.galleria.push(l); apriLavoro(l);
 });
 
@@ -1357,8 +1395,11 @@ function collegaFoto(inputSel, anteprimaSel, assegna){
   });
 }
 collegaFoto("#p-foto",  "#p-foto-anteprima",  p => { if(pacchettoCorrente) pacchettoCorrente.foto = p; });
-collegaFoto("#l-prima", "#l-prima-anteprima", p => { if(lavoroCorrente) lavoroCorrente.prima = p; });
-collegaFoto("#l-dopo",  "#l-dopo-anteprima",  p => { if(lavoroCorrente) lavoroCorrente.dopo  = p; });
+collegaFoto("#l-foto",  "#l-foto-anteprima",  p => {
+  if(!lavoroCorrente) return;
+  lavoroCorrente.foto = p;
+  delete lavoroCorrente.prima; delete lavoroCorrente.dopo;   // via il vecchio prima/dopo
+});
 
 /* ---------- salvataggio ---------- */
 $("#salva").addEventListener('click', async () => {
