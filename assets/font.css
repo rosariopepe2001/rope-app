@@ -1,0 +1,33 @@
+/* I caratteri di ROPE, dentro l'app e dentro il sito.
+
+   Prima arrivavano da Google a ogni avvio: senza rete, o con rete lenta,
+   al posto delle icone comparivano le parole ("arrow_back", "home").
+
+   Questo file va collegato da OGNI pagina, anche da quelle che hanno un
+   CSS tutto loro (02-servizi.html e pannello.html): è il motivo per cui
+   sta qui separato e non dentro app.css.
+
+   Le icone sono solo quelle usate davvero: 5 KB invece di 313.
+   Per rifarle: fonts.googleapis.com/css2?family=Material+Symbols+Outlined
+   :opsz,wght,FILL,GRAD@24,400,0,0&icon_names=nome1,nome2,... */
+
+@font-face{font-family:'Sora';font-style:normal;font-weight:500;font-display:swap;
+           src:url(font/sora-500.woff2) format('woff2')}
+@font-face{font-family:'Sora';font-style:normal;font-weight:600;font-display:swap;
+           src:url(font/sora-600.woff2) format('woff2')}
+@font-face{font-family:'Sora';font-style:normal;font-weight:700;font-display:swap;
+           src:url(font/sora-700.woff2) format('woff2')}
+@font-face{font-family:'Inter';font-style:normal;font-weight:400;font-display:swap;
+           src:url(font/inter-400.woff2) format('woff2')}
+@font-face{font-family:'Inter';font-style:normal;font-weight:500;font-display:swap;
+           src:url(font/inter-500.woff2) format('woff2')}
+@font-face{font-family:'Inter';font-style:normal;font-weight:600;font-display:swap;
+           src:url(font/inter-600.woff2) format('woff2')}
+
+/* block, non swap: meglio un attimo di vuoto che vedere scritto "arrow_back" */
+@font-face{font-family:'Material Symbols Outlined';font-style:normal;font-weight:400;
+           font-display:block;src:url(font/icone.woff2) format('woff2')}
+
+.material-symbols-outlined{font-family:'Material Symbols Outlined';font-weight:normal;
+     font-style:normal;line-height:1;letter-spacing:normal;text-transform:none;
+     display:inline-block;white-space:nowrap;word-wrap:normal;direction:ltr}
