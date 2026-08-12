@@ -2,6 +2,9 @@
 :root{
   --bg:#0A0A0B; --surface:#16161A; --surface-2:#1D1D22; --border:#26262C;
   --text:#F2F2F4; --text-2:#A0A0A8; --accent:#D4D7DC;
+  /* verde "fatto" e rosso "attenzione": erano usati dalle schermate ma
+     non erano mai stati definiti qui, così restavano del colore normale */
+  --ok:#7FBF9A; --danger:#E8807A;
   --headline:'Sora',-apple-system,BlinkMacSystemFont,sans-serif;
   --body:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
   color-scheme:dark;
@@ -98,4 +101,11 @@ nav.tab a.attivo{color:var(--accent)}
 nav.tab .material-symbols-outlined{font-size:22px}
 
 .vuoto{text-align:center;color:var(--text-2);padding:48px 20px}
+/* Niente zoom sul doppio tocco: dentro l'app è solo un fastidio.
+   Va messo su OGNI elemento, non solo su <html>: touch-action non si
+   eredita, quindi sul testo dentro le carte lo zoom restava attivo.
+   "manipulation" toglie il doppio-tap-per-ingrandire ma lascia scorrere
+   e lascia il pizzico a due dita a chi ha bisogno di ingrandire. */
+html,body,*{touch-action:manipulation}
+
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}

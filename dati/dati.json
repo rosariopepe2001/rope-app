@@ -216,7 +216,7 @@
       "id": "p-esperienze",
       "foto": "",
       "nome": "Esperienze ROPE",
-      "nota": "Servizio a domicilio",
+      "nota": "",
       "extra": [],
       "attivo": true,
       "livelli": [
@@ -233,12 +233,12 @@
           },
           "titolo": "Trattamento Showroom",
           "evidenza": false,
-          "descrizione": "Un servizio esclusivo a domicilio dedicato a chi desidera riportare la propria auto al massimo del suo potenziale estetico, dentro e fuori.\n\nL’abitacolo viene sottoposto a un trattamento completo e approfondito, con pulizia tecnica di ogni dettaglio, estrazione dello sporco dai tessuti e trattamenti specifici per nutrire e proteggere pelle, plastiche e superfici interne.\n\nAll’esterno, dopo un’accurata decontaminazione della carrozzeria, viene eseguita una lucidatura mirata per correggere micrograffi, swirls e opacità, esaltando nuovamente profondità, riflesso e brillantezza della vernice.\n\nIl trattamento si conclude con l’applicazione di una protezione nanotecnologica idrofobica su carrozzeria e parabrezza, studiata per preservare più a lungo il risultato ottenuto e facilitare la manutenzione dell’auto.\n\nIl risultato è una vettura completamente valorizzata, con interni rigenerati e una carrozzeria brillante e profonda, per un autentico effetto showroom.",
+          "descrizione": "Un servizio esclusivo dedicato a chi desidera riportare la propria auto al massimo del suo potenziale estetico, dentro e fuori.\n\nL’abitacolo viene sottoposto a un trattamento completo e approfondito, con pulizia tecnica di ogni dettaglio, estrazione dello sporco dai tessuti e trattamenti specifici per nutrire e proteggere pelle, plastiche e superfici interne.\n\nAll’esterno, dopo un’accurata decontaminazione della carrozzeria, viene eseguita una lucidatura mirata per correggere micrograffi, swirls e opacità, esaltando nuovamente profondità, riflesso e brillantezza della vernice.\n\nIl trattamento si conclude con l’applicazione di una protezione nanotecnologica idrofobica su carrozzeria e parabrezza, studiata per preservare più a lungo il risultato ottenuto e facilitare la manutenzione dell’auto.\n\nIl risultato è una vettura completamente valorizzata, con interni rigenerati e una carrozzeria brillante e profonda, per un autentico effetto showroom.",
           "durataGiorni": 2,
           "durataMinuti": null
         }
       ],
-      "sottotitolo": "Servizio esclusivo a domicilio"
+      "sottotitolo": "Il nostro trattamento più completo"
     },
     {
       "id": "p-mantenimento",

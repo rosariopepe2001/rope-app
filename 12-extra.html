@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="it" class="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>ROPE Car Detailing — Solo servizi extra</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+<link href="assets/app.css" rel="stylesheet">
+<style>
+  .passi-txt{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-2);margin-bottom:10px}
+  h1{font-family:var(--headline);font-size:24px;font-weight:700;margin:0 0 6px}
+  .intro{color:var(--text-2);font-size:14px;margin:0 0 24px;line-height:1.55}
+
+  .selettore{background:var(--surface);border:1px solid var(--border);
+             border-radius:20px;padding:18px;margin-bottom:26px}
+  .selettore .tit{font-family:var(--headline);font-size:11px;letter-spacing:.18em;
+                  text-transform:uppercase;color:var(--text-2);font-weight:600;margin-bottom:14px}
+
+  .voce-extra{display:flex;align-items:center;gap:14px;width:100%;text-align:left;
+       background:var(--surface);border:1px solid var(--border);border-radius:16px;
+       padding:16px 18px;margin-bottom:10px;cursor:pointer;color:inherit;font:inherit;
+       transition:border-color .2s,background .2s}
+  .voce-extra:hover{border-color:var(--accent)}
+  .voce-extra[aria-pressed="true"]{border-color:var(--accent);background:var(--surface-2)}
+  .segno{width:26px;height:26px;border-radius:8px;border:1px solid var(--border);
+         flex:0 0 auto;display:flex;align-items:center;justify-content:center}
+  .voce-extra[aria-pressed="true"] .segno{background:var(--accent);border-color:var(--accent)}
+  .segno .material-symbols-outlined{font-size:18px;color:var(--bg);opacity:0}
+  .voce-extra[aria-pressed="true"] .segno .material-symbols-outlined{opacity:1}
+  .voce-extra .corpo{flex:1;min-width:0}
+  .voce-extra .n{font-size:15px;font-weight:500}
+  .voce-extra .p{font-family:var(--headline);font-weight:700;font-size:17px;
+                 color:var(--accent);white-space:nowrap}
+  .caricamento{text-align:center;color:var(--text-2);padding:50px 20px}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a href="02-servizi.html" aria-label="Indietro"><span class="material-symbols-outlined" aria-hidden="true">arrow_back</span></a>
+  <span class="titolo">Servizi extra</span>
+  <span style="min-width:44px"></span>
+</header>
+
+<main>
+  <div class="passi-txt">Passo 1 di 4 · Servizi</div>
+  <h1>Solo servizi extra</h1>
+  <p class="intro">Scegli uno o più servizi singoli, senza prendere un pacchetto.
+     Puoi selezionarne quanti vuoi.</p>
+
+  <div class="selettore">
+    <div class="tit">La tua auto</div>
+    <div class="chips" id="chips" role="group" aria-label="Taglia dell'auto"></div>
+    <p class="spiega" id="spiega"></p>
+  </div>
+
+  <div id="elenco"><p class="caricamento">Carico i servizi…</p></div>
+</main>
+
+<div class="barra">
+  <div class="totale"><small>Totale</small><b id="tot">—</b></div>
+  <button class="btn primario" id="avanti" disabled>Continua</button>
+</div>
+
+<script src="assets/config.js"></script>
+<script src="assets/account.js"></script>
+<script src="assets/app.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+let scelti = [];        // [{id, pacchettoId}]
+
+function selezionato(id){ return scelti.some(x => x.id === id); }
+
+function aggiornaTotale(){
+  $("#spiega").innerHTML = ROPE.testoSpiegaTaglia();
+  const t = ROPE.totale({pacchettoId:null, livelloId:null, taglia:ROPE.taglia(), extra:scelti});
+  $("#tot").textContent = scelti.length ? t.testo : '—';
+  $("#avanti").disabled = !scelti.length;
+}
+
+function disegna(){
+  const c = $("#elenco");
+  const voci = ROPE.extraDelListino();
+  if(!voci.length){
+    c.innerHTML = '<p class="caricamento">Nessun servizio extra disponibile al momento.</p>';
+    return;
+  }
+  c.innerHTML = "";
+  voci.forEach(({extra, pacchetto}) => {
+    const b = document.createElement('button');
+    b.className = 'voce-extra';
+    b.type = 'button';
+    b.setAttribute('aria-pressed', selezionato(extra.id));
+    b.innerHTML = `
+      <span class="segno"><span class="material-symbols-outlined" aria-hidden="true">check</span></span>
+      <span class="corpo"><span class="n">${ROPE.esc(extra.nome)}</span></span>
+      <span class="p">${ROPE.testoPrezzo(extra)}</span>`;
+    b.addEventListener('click', () => {
+      if(selezionato(extra.id)) scelti = scelti.filter(x => x.id !== extra.id);
+      else scelti.push({id: extra.id, pacchettoId: pacchetto.id});
+      b.setAttribute('aria-pressed', selezionato(extra.id));
+      aggiornaTotale();
+    });
+    c.appendChild(b);
+  });
+}
+
+(async function(){
+  try{ await ROPE.carica(); }
+  catch(e){
+    $("#elenco").innerHTML = '<p class="caricamento">Servizi non disponibili al momento.</p>';
+    return;
+  }
+
+  // se stava già scegliendo solo extra, ritrova quello che aveva selezionato
+  const s = ROPE.selezione();
+  if(!s.livelloId && (s.extra || []).length) scelti = s.extra.slice();
+
+  ROPE.disegnaChipsTaglia('#chips', () => { disegna(); aggiornaTotale(); });
+  disegna();
+  aggiornaTotale();
+})();
+
+$("#avanti").addEventListener('click', () => {
+  if(!scelti.length) return;
+  ROPE.aggiorna({
+    pacchettoId: null, livelloId: null,
+    extra: scelti,
+    taglia: ROPE.taglia(),
+    data: null, dataISO: null, ora: null      // l'orario si sceglie adesso
+  });
+  location.href = '04-data-e-ora.html';
+});
+</script>
+</body>
+</html>

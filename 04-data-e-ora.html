@@ -2,7 +2,7 @@
 <html lang="it" class="dark">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>ROPE — Data e ora</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -77,6 +77,7 @@
 </div>
 
 <script src="assets/config.js"></script>
+<script src="assets/account.js"></script>
 <script src="assets/app.js"></script>
 <script>
 const $ = s => document.querySelector(s);
@@ -92,8 +93,9 @@ let scelta = null, ora = null, durata = 120, giorni = 1;
   try{ await ROPE.carica(); }catch(e){}
   const s = ROPE.selezione();
   const t = s.pacchettoId ? ROPE.trovaLivello(s.pacchettoId, s.livelloId) : null;
+  const soliExtra = ROPE.soloExtra(s);
 
-  if(!t){
+  if(!t && !soliExtra){
     $("#scelto").innerHTML =
       '<div><div class="n">Nessun servizio scelto</div>' +
       '<div class="m">Torna ai servizi per sceglierne uno</div></div>' +
@@ -101,13 +103,27 @@ let scelta = null, ora = null, durata = 120, giorni = 1;
   }else{
     const tot = ROPE.totale();
     const nEx = (s.extra||[]).length;
+    const sotto = soliExtra
+      ? (nEx === 1 ? 'Un servizio extra' : nEx + ' servizi extra')
+      : ROPE.esc(ROPE.tagliaOggetto()?.nome || '') + (nEx ? ' · ' + nEx + ' extra' : '');
     $("#scelto").innerHTML =
-      `<div><div class="n">${ROPE.esc(t.livello.titolo || t.livello.nome)}</div>
-        <div class="m">${ROPE.esc(ROPE.tagliaOggetto()?.nome || '')}${nEx ? ' · ' + nEx + ' extra' : ''}</div></div>
+      `<div><div class="n">${ROPE.esc(ROPE.nomeDellaSelezione(s))}</div>
+        <div class="m">${sotto}</div></div>
        <div class="p">${tot.testo}</div>`;
     $("#tot").textContent = tot.testo;
-    giorni = ROPE.giorniDi(s.pacchettoId, s.livelloId);
+    giorni = ROPE.giorniDellaSelezione(s);
     if(giorni > 1) $("#titolo-orari").textContent = 'Giorno di inizio';
+    if(ROPE.daValutare(s)){
+      $("#titolo-orari").textContent = 'Quando ci porti l\'auto';
+      const avviso = document.createElement('p');
+      avviso.className = 'nota';
+      avviso.style.margin = '0 0 18px';
+      avviso.innerHTML = '<span class="material-symbols-outlined" aria-hidden="true">info</span>' +
+        '<span>Per questo lavoro la durata dipende da com\'è messa la vernice: ' +
+        'si capisce solo vedendo l\'auto. Scegli il giorno in cui ce la porti, ' +
+        'ti diciamo noi quanti giorni servono.</span>';
+      $("#scelto").after(avviso);
+    }
   }
 
   disegnaMese(); disegnaOrari();
@@ -133,14 +149,35 @@ function disegnaMese(){
     b.disabled = data < oggi || chiuso;
     b.setAttribute('aria-pressed', !!(scelta && data.getTime() === scelta.getTime()));
     if(chiuso) b.title = 'Chiuso';
-    b.addEventListener('click', () => {
-      scelta = data; ora = null; disegnaMese(); disegnaOrari(); controlla();
+    b.addEventListener('click', async () => {
+      scelta = data; ora = null; disegnaMese(); controlla();
+      await disegnaOrari();
+      /* scelto il giorno, la pagina scende da sola sugli orari:
+         altrimenti restano sotto il bordo e sembra non sia successo niente */
+      $("#titolo-orari").scrollIntoView({behavior:'smooth', block:'start'});
     });
     c.appendChild(b);
   }
 }
 
 async function disegnaOrari(){
+  /* lavori a durata da valutare: si sceglie solo il giorno di consegna,
+     l'orario è l'apertura. Proporre una griglia di orari sarebbe finto. */
+  const sel = ROPE.selezione();
+  if(ROPE.daValutare(sel)){
+    const c = $("#orari");
+    if(!scelta){
+      c.innerHTML = '<p class="vuoto" style="padding:20px 0;font-size:14px">Scegli prima un giorno.</p>';
+      return;
+    }
+    const g = ((ROPE.dati.disponibilita||{}).giorni||{})[String(scelta.getDay()===0?7:scelta.getDay())];
+    ora = (g && g.da) || '09:00';
+    c.innerHTML = '<p class="vuoto" style="padding:12px 0;font-size:14px">' +
+      'Ci porti l\'auto la mattina del giorno scelto, dalle ' + ora + '.</p>';
+    controlla();
+    return;
+  }
+
   const c = $("#orari");
 
   if(!scelta){
@@ -169,7 +206,7 @@ async function disegnaOrari(){
 
   c.innerHTML = '<p class="niente">Controllo gli orari liberi…</p>';
   const s = ROPE.selezione();
-  durata = ROPE.durataPerGiorno(s.pacchettoId, s.livelloId, scelta);
+  durata = ROPE.durataDellaSelezione(s, scelta);
   const slot = await ROPE.slotLiberi(scelta, durata);
 
   if(!slot.length){

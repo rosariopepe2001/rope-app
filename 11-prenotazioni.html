@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="it" class="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>ROPE Car Detailing — Le mie prenotazioni</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+<link href="assets/app.css" rel="stylesheet">
+<style>
+  h1{font-family:var(--headline);font-size:26px;font-weight:700;
+     letter-spacing:.14em;text-transform:uppercase;margin:0 0 6px}
+  .intro{color:var(--text-2);font-size:14px;margin:0 0 22px}
+
+  .pren{background:var(--surface);border:1px solid var(--border);border-radius:18px;
+        padding:18px;margin-bottom:12px}
+  .pren.prossima{border-color:var(--accent)}
+  .cima{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .pren h2{font-family:var(--headline);font-size:17px;font-weight:600;margin:0}
+  .pren .pacchetto{color:var(--text-2);font-size:13px;margin-top:2px}
+  .quando{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:15px}
+  .quando .material-symbols-outlined{font-size:18px;color:var(--text-2)}
+  .dettagli{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+  .pezzo{font-size:12px;letter-spacing:.06em;border:1px solid var(--border);
+         border-radius:99px;padding:4px 10px;color:var(--text-2)}
+  .piede{display:flex;align-items:center;justify-content:space-between;gap:12px;
+         margin-top:16px;padding-top:14px;border-top:1px solid var(--border)}
+  .prezzo{font-family:var(--headline);font-weight:700;font-size:19px;color:var(--accent)}
+  .codice{font-size:12px;color:var(--text-2);letter-spacing:.08em}
+
+  .tag{font-size:10px;letter-spacing:.12em;text-transform:uppercase;font-weight:600;
+       border-radius:99px;padding:5px 11px;white-space:nowrap;
+       border:1px solid var(--border);color:var(--text-2)}
+  .tag.attesa{border-color:var(--accent);color:var(--accent)}
+  .tag.ok{border-color:rgba(127,191,154,.5);color:var(--ok)}
+  .tag.no{border-color:rgba(232,128,122,.45);color:var(--danger)}
+
+  .gruppo{font-family:var(--headline);font-size:11px;letter-spacing:.18em;
+          text-transform:uppercase;color:var(--text-2);font-weight:600;margin:30px 0 12px}
+  .gruppo:first-of-type{margin-top:0}
+  .caricamento{text-align:center;color:var(--text-2);padding:50px 20px}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <img class="logo" src="assets/rope-logo.png" alt="ROPE Car Detailing">
+  <span style="min-width:44px"></span>
+</header>
+
+<main>
+  <h1>Prenotazioni</h1>
+  <p class="intro">Gli appuntamenti che hai preso da ROPE.</p>
+
+  <a class="btn primario pieno" href="02-servizi.html" style="margin-bottom:26px">Prenota un servizio</a>
+
+  <div id="elenco"><p class="caricamento">Carico le tue prenotazioni…</p></div>
+</main>
+
+<nav class="tab">
+  <a href="01-home.html"><span class="material-symbols-outlined" aria-hidden="true">home</span>Home</a>
+  <a href="02-servizi.html"><span class="material-symbols-outlined" aria-hidden="true">list</span>Servizi</a>
+  <a href="11-prenotazioni.html" class="attivo"><span class="material-symbols-outlined" aria-hidden="true">calendar_month</span>Prenotazioni</a>
+  <a href="09-profilo.html"><span class="material-symbols-outlined" aria-hidden="true">person</span>Profilo</a>
+</nav>
+
+<script src="assets/config.js"></script>
+<script src="assets/account.js"></script>
+<script src="assets/avvisi.js"></script>
+<script src="assets/app.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+
+if(!ROPE_ACCOUNT.serveAccesso()) throw new Error('accesso richiesto');
+
+const STATI = {
+  nuova:      {n:'In attesa di conferma', c:'attesa'},
+  confermata: {n:'Confermata',            c:'ok'},
+  completata: {n:'Completata',            c:''},
+  annullata:  {n:'Annullata',             c:'no'}
+};
+
+const MESI = ['gennaio','febbraio','marzo','aprile','maggio','giugno',
+              'luglio','agosto','settembre','ottobre','novembre','dicembre'];
+const GIORNI = ['domenica','lunedì','martedì','mercoledì','giovedì','venerdì','sabato'];
+
+function dataInItaliano(iso){
+  if(!iso) return 'Data da definire';
+  const d = new Date(iso + 'T00:00:00');
+  return GIORNI[d.getDay()] + ' ' + d.getDate() + ' ' + MESI[d.getMonth()] + ' ' + d.getFullYear();
+}
+
+function scheda(v, prossima){
+  const st = STATI[v.stato] || STATI.nuova;
+  const auto = v.auto || {};
+  const extra = (v.extra || []).map(e => e.nome).filter(Boolean);
+  const pezzi = [];
+  if(auto.marca || auto.modello) pezzi.push([auto.marca, auto.modello].filter(Boolean).join(' '));
+  if(auto.targa) pezzi.push(auto.targa);
+  if(v.taglia) pezzi.push('Taglia ' + String(v.taglia).toUpperCase());
+  if((v.giorni || 1) > 1) pezzi.push(v.giorni + ' giorni di lavorazione');
+  extra.forEach(x => pezzi.push(x));
+
+  const div = document.createElement('div');
+  div.className = 'pren' + (prossima ? ' prossima' : '');
+  div.innerHTML = `
+    <div class="cima">
+      <div>
+        <h2>${ROPE.esc(v.servizio || 'Servizio')}</h2>
+        <div class="pacchetto">${ROPE.esc(v.pacchetto || '')}</div>
+      </div>
+      <span class="tag ${st.c}">${st.n}</span>
+    </div>
+    <div class="quando">
+      <span class="material-symbols-outlined" aria-hidden="true">event</span>
+      <span>${ROPE.esc(dataInItaliano(v.data_app))}${v.ora ? ' · ' + ROPE.esc(v.ora) : ''}</span>
+    </div>
+    ${pezzi.length ? `<div class="dettagli">${pezzi.map(p =>
+        `<span class="pezzo">${ROPE.esc(p)}</span>`).join('')}</div>` : ''}
+    ${v.note ? `<div class="nota" style="margin-top:12px">${ROPE.esc(v.note)}</div>` : ''}
+    <div class="piede">
+      <span class="codice">${ROPE.esc(v.codice || '')}</span>
+      <span class="prezzo">${ROPE.esc(v.totale || '')}</span>
+    </div>`;
+  return div;
+}
+
+function titolo(testo){
+  const t = document.createElement('div');
+  t.className = 'gruppo'; t.textContent = testo;
+  return t;
+}
+
+let improntaElenco = null;
+
+async function caricaElenco(){
+  const c = $("#elenco");
+  let righe;
+  try{
+    const r = await ROPE_ACCOUNT.conAccount(
+      '/rest/v1/prenotazioni?select=*&order=data_app.desc,ora.desc&limit=100');
+    if(!r.ok) throw new Error('risposta ' + r.status);
+    righe = await r.json();
+  }catch(e){
+    if(e.motivo === 'scaduta') return ROPE_ACCOUNT.serveAccesso();
+    // se l'elenco è già a schermo lo lasciamo lì: un controllo andato
+    // male non deve cancellare quello che sta leggendo
+    if(improntaElenco === null)
+      c.innerHTML = `<p class="caricamento">Non riesco a leggere le tue prenotazioni.<br>
+        <span style="font-size:13px">Controlla la connessione e riprova.</span></p>`;
+    return;
+  }
+
+  /* Si ridisegna solo se è cambiato qualcosa davvero: il controllo gira
+     ogni pochi secondi e la pagina non deve muoversi sotto le dita. */
+  const impronta = JSON.stringify(righe.map(v =>
+    [v.id, v.stato, v.data_app, v.ora, v.totale, v.servizio, v.note]));
+  if(impronta === improntaElenco) return;
+  improntaElenco = impronta;
+
+  if(!righe.length){
+    c.innerHTML = `<p class="caricamento">Non hai ancora prenotato niente.<br>
+      <span style="font-size:13px">Quando prenoti, l'appuntamento compare qui.</span></p>`;
+    return;
+  }
+
+  const oggi = ROPE.dataISO(new Date());
+  // completate e annullate escono da 'In arrivo' anche se la data non e' passata
+  const finite = ['annullata', 'completata'];
+  const arrivo  = righe.filter(v => (!v.data_app || v.data_app >= oggi) && !finite.includes(v.stato))
+                       .sort((a,b) => String(a.data_app||'').localeCompare(String(b.data_app||''))
+                                      || String(a.ora||'').localeCompare(String(b.ora||'')));
+  const passate = righe.filter(v => !arrivo.includes(v));
+
+  c.innerHTML = "";
+  if(arrivo.length){
+    c.appendChild(titolo('In arrivo'));
+    arrivo.forEach((v, i) => c.appendChild(scheda(v, i === 0)));
+  }
+  if(passate.length){
+    c.appendChild(titolo(arrivo.length ? 'Già fatte' : 'Le tue prenotazioni'));
+    passate.forEach(v => c.appendChild(scheda(v, false)));
+  }
+}
+
+caricaElenco();
+/* Si rilegge da solo mentre la schermata è aperta, e ogni volta che si
+   torna nell'app: se il centro conferma, completa o annulla, lo stato qui
+   cambia da solo, senza cambiare schermata e senza riavviare niente. */
+ROPE.tieniAggiornato(caricaElenco, 12000);
+
+/* riallinea i promemoria alle prenotazioni vere: se il centro ha spostato
+   o annullato qualcosa, gli avvisi sul telefono si correggono da soli */
+if(window.ROPE_AVVISI) ROPE_AVVISI.aggiorna().catch(() => {});
+</script>
+</body>
+</html>

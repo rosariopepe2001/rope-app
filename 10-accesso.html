@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="it" class="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>ROPE Car Detailing — Accedi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="assets/app.css" rel="stylesheet">
+<style>
+  body{padding-bottom:0}
+  /* la zona di sicurezza in cima: senza, la Dynamic Island copre il logo */
+  main{max-width:460px;margin:0 auto;
+       padding:calc(40px + env(safe-area-inset-top)) 22px calc(60px + env(safe-area-inset-bottom));
+       min-height:100dvh;display:flex;flex-direction:column;justify-content:center}
+  .logo-grande{width:150px;height:auto;display:block;margin:0 auto 34px}
+  h1{font-family:var(--headline);font-size:21px;font-weight:600;letter-spacing:.12em;
+     text-transform:uppercase;margin:0 0 6px;text-align:center}
+  .sub{color:var(--text-2);font-size:14px;text-align:center;margin:0 0 30px;line-height:1.5}
+
+  label{display:block;font-size:13px;color:var(--text-2);margin:0 0 6px;font-weight:500}
+  input{width:100%;min-height:52px;background:var(--surface);color:var(--text);
+        border:1px solid var(--border);border-radius:14px;padding:14px 16px;
+        font-family:var(--body);font-size:16px;margin:0 0 16px}
+  input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  .messaggio{font-size:14px;line-height:1.5;margin:0 0 16px;padding:14px 16px;
+             border-radius:12px;border:1px solid var(--border)}
+  .messaggio.errore{color:var(--danger);border-color:rgba(232,128,122,.4)}
+  .messaggio.ok{color:var(--ok);border-color:rgba(127,191,154,.4)}
+
+  .btn-pieno{width:100%;min-height:54px;border-radius:99px;border:none;
+       background:var(--accent);color:var(--bg);font-family:var(--headline);
+       font-size:13px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+       cursor:pointer;transition:background .2s}
+  .btn-pieno:hover{background:#E6E9ED}
+  .btn-pieno:disabled{opacity:.5;cursor:default}
+
+  /* Accedi con Apple: bianco su nero, come chiede Apple nelle sue linee guida */
+  .oppure{display:flex;align-items:center;gap:14px;margin:22px 0;
+          color:var(--text-2);font-size:13px}
+  .oppure::before,.oppure::after{content:"";flex:1;height:1px;background:var(--border)}
+  .btn-apple{width:100%;min-height:54px;border-radius:99px;border:1px solid #fff;
+       background:#fff;color:#000;font-family:var(--body);font-size:17px;font-weight:600;
+       cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px}
+  .btn-apple:disabled{opacity:.5;cursor:default}
+  .btn-apple .mela{width:18px;height:20px;margin-top:-3px}
+
+  .cambia{text-align:center;margin-top:26px;font-size:14px;color:var(--text-2)}
+  .cambia button{background:none;border:none;color:var(--accent);font-family:var(--body);
+       font-size:14px;font-weight:600;cursor:pointer;padding:10px 6px;min-height:44px}
+  .minore{background:none;border:none;color:var(--text-2);font-family:var(--body);
+       font-size:13px;cursor:pointer;padding:10px 0;min-height:44px;display:block;margin:0 auto}
+  .nota-privacy{color:var(--text-2);font-size:12px;line-height:1.55;text-align:center;margin:24px 0 0}
+  .nota-privacy a{color:var(--text-2)}
+</style>
+</head>
+<body>
+
+<main>
+  <img class="logo-grande" src="assets/rope-logo.png" alt="ROPE Car Detailing">
+
+  <h1 id="titolo">Accedi</h1>
+  <p class="sub" id="sottotitolo">Entra per prenotare e ritrovare i tuoi appuntamenti.</p>
+
+  <p class="messaggio" id="messaggio" role="alert" hidden></p>
+
+  <form id="modulo" novalidate>
+    <div id="campi-registrazione" hidden>
+      <label for="c-nome">Nome e cognome</label>
+      <input type="text" id="c-nome" autocomplete="name" placeholder="Mario Rossi">
+
+      <label for="c-tel">Numero di telefono</label>
+      <input type="tel" id="c-tel" autocomplete="tel" inputmode="tel" placeholder="327 1234567">
+    </div>
+
+    <label for="c-email">Email</label>
+    <input type="email" id="c-email" autocomplete="email" inputmode="email"
+           spellcheck="false" placeholder="la tua email">
+
+    <label for="c-password">Password</label>
+    <input type="password" id="c-password" autocomplete="current-password"
+           placeholder="almeno 6 caratteri">
+
+    <button class="btn-pieno" type="submit" id="invia">Entra</button>
+  </form>
+
+  <div id="apple-blocco" hidden>
+    <div class="oppure"><span>oppure</span></div>
+    <button class="btn-apple" type="button" id="apple">
+      <svg class="mela" viewBox="0 0 384 512" aria-hidden="true">
+        <path fill="currentColor" d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/>
+      </svg>
+      Accedi con Apple
+    </button>
+  </div>
+
+  <button class="minore" type="button" id="dimenticata">Ho dimenticato la password</button>
+
+  <p class="cambia" id="cambia-riga">
+    <span id="cambia-testo">Non hai ancora un account?</span>
+    <button type="button" id="cambia">Registrati</button>
+  </p>
+
+  <p class="nota-privacy">Registrandoti accetti che usiamo nome, telefono e dati
+     dell'auto solo per gestire le prenotazioni.<br>
+     <a href="privacy.html">Informativa sulla privacy</a></p>
+</main>
+
+<script src="assets/config.js"></script>
+<script src="assets/account.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+let modo = 'entra';          // 'entra' oppure 'registra'
+
+const torna = new URLSearchParams(location.search).get('torna') || '01-home.html';
+
+/* chi è già entrato non deve rivedere questa schermata */
+if(ROPE_ACCOUNT.dentro()) location.replace(torna);
+
+function messaggio(testo, tipo){
+  const m = $("#messaggio");
+  if(!testo){ m.hidden = true; return; }
+  m.textContent = testo;
+  m.className = 'messaggio ' + (tipo || 'errore');
+  m.hidden = false;
+  m.scrollIntoView({block:'nearest'});
+}
+
+function impostaModo(nuovo){
+  modo = nuovo;
+  const reg = modo === 'registra';
+  $("#campi-registrazione").hidden = !reg;
+  $("#titolo").textContent = reg ? 'Crea il tuo account' : 'Accedi';
+  $("#sottotitolo").textContent = reg
+    ? 'Ti serve per prenotare e per ritrovare i tuoi appuntamenti.'
+    : 'Entra per prenotare e ritrovare i tuoi appuntamenti.';
+  $("#invia").textContent = reg ? 'Registrati' : 'Entra';
+  $("#cambia-testo").textContent = reg ? 'Hai già un account?' : 'Non hai ancora un account?';
+  $("#cambia").textContent = reg ? 'Accedi' : 'Registrati';
+  $("#c-password").setAttribute('autocomplete', reg ? 'new-password' : 'current-password');
+  $("#dimenticata").hidden = reg;
+  messaggio(null);
+}
+
+$("#cambia").addEventListener('click', () => impostaModo(modo === 'entra' ? 'registra' : 'entra'));
+
+$("#modulo").addEventListener('submit', async e => {
+  e.preventDefault();
+  const b = $("#invia"), testoIniziale = b.textContent;
+  messaggio(null);
+  b.disabled = true; b.textContent = modo === 'registra' ? 'Ti registro…' : 'Entro…';
+  try{
+    if(modo === 'registra')
+      await ROPE_ACCOUNT.registra($("#c-email").value, $("#c-password").value,
+                                  $("#c-nome").value, $("#c-tel").value);
+    else
+      await ROPE_ACCOUNT.entra($("#c-email").value, $("#c-password").value);
+    location.replace(torna);
+    return;
+  }catch(ex){
+    messaggio(ex.message, ex.motivo === 'conferma' ? 'ok' : 'errore');
+    if(ex.motivo === 'conferma') impostaModo('entra');
+  }
+  b.disabled = false; b.textContent = testoIniziale;
+});
+
+$("#dimenticata").addEventListener('click', async () => {
+  const email = $("#c-email").value.trim();
+  if(!email) return messaggio("Scrivi prima la tua email qui sopra, poi tocca di nuovo.");
+  const b = $("#dimenticata");
+  b.disabled = true;
+  try{
+    await ROPE_ACCOUNT.passwordDimenticata(email);
+    messaggio("Ti abbiamo mandato un'email per rifare la password.", 'ok');
+  }catch(ex){ messaggio(ex.message); }
+  b.disabled = false;
+});
+
+/* Il pulsante Apple si vede solo dentro l'app: nel browser non funzionerebbe */
+if(ROPE_ACCOUNT.appleDisponibile()){
+  $("#apple-blocco").hidden = false;
+  $("#apple").addEventListener('click', async () => {
+    const b = $("#apple"), testo = b.lastChild.textContent;
+    messaggio(null);
+    b.disabled = true; b.lastChild.textContent = ' Attendo Apple…';
+    try{
+      await ROPE_ACCOUNT.conApple();
+      location.replace(torna);
+      return;
+    }catch(ex){ messaggio(ex.message); }
+    b.disabled = false; b.lastChild.textContent = testo;
+  });
+}
+
+impostaModo('entra');
+</script>
+</body>
+</html>

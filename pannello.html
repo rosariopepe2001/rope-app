@@ -51,6 +51,10 @@
   .pacchetto .st{color:var(--text-2);font-size:13px;margin-top:2px}
   .pacchetto .nota{font-size:13px;color:var(--accent);margin-top:10px;
                    border-left:2px solid var(--border);padding-left:12px;line-height:1.45}
+  /* prenotazione arrivata mentre guardavi: si fa notare, senza rumore */
+  .pacchetto.appena-arrivata{border-color:var(--accent);animation:comparsa .6s ease}
+  @keyframes comparsa{from{opacity:.4;transform:translateY(-4px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){.pacchetto.appena-arrivata{animation:none}}
   .gruppo{font-family:var(--headline);font-size:11px;letter-spacing:.18em;
           text-transform:uppercase;color:var(--text-2);margin:20px 0 10px;font-weight:600}
 
@@ -206,6 +210,7 @@
 
 <nav role="tablist" aria-label="Sezioni">
   <button role="tab" id="tab-prenotazioni" aria-selected="true" aria-controls="p-prenotazioni">Prenotazioni</button>
+  <button role="tab" id="tab-auto"      aria-selected="false" aria-controls="p-auto">Auto</button>
   <button role="tab" id="tab-pacchetti" aria-selected="false" aria-controls="p-pacchetti">Pacchetti</button>
   <button role="tab" id="tab-taglie"    aria-selected="false" aria-controls="p-taglie">Taglie</button>
   <button role="tab" id="tab-orari"     aria-selected="false" aria-controls="p-orari">Orari</button>
@@ -221,6 +226,17 @@
     <button class="btn primario pieno" id="nuova-pren">+ Prenotazione a mano</button>
     <div id="lista-prenotazioni" style="margin-top:18px"><p class="vuoto">Carico…</p></div>
     <button class="btn pieno" id="ricarica-pren" style="margin-top:8px">Aggiorna</button>
+    <p class="sub" id="pren-aggiornato" style="text-align:center;margin:10px 0 0;font-size:12px"
+       role="status" aria-live="polite">Si aggiorna da solo.</p>
+  </section>
+
+  <section id="p-auto" role="tabpanel" aria-labelledby="tab-auto" hidden>
+    <h2>Auto passate in officina</h2>
+    <p class="sub">Tutti i lavori fatti su ogni auto. Cerca la targa e vedi lo storico.</p>
+    <label for="cerca-auto">Cerca</label>
+    <input type="text" id="cerca-auto" placeholder="targa, marca, modello o cliente"
+           autocomplete="off" spellcheck="false">
+    <div id="lista-auto" style="margin-top:18px"><p class="vuoto">Carico…</p></div>
   </section>
 
   <section id="p-pacchetti" role="tabpanel" aria-labelledby="tab-pacchetti" hidden>
@@ -439,6 +455,10 @@
         <input type="time" id="n-ora-libera" step="300">
       </div>
 
+      <label for="n-giorni">Giorni di lavorazione
+        <small>(quanti giorni tieni l'auto: blocca il calendario)</small></label>
+      <input type="number" id="n-giorni" min="1" max="30" step="1" inputmode="numeric" value="1">
+
       <p class="nota" id="n-avviso" hidden></p>
 
       <div class="gruppo">Auto</div>
@@ -605,9 +625,9 @@
 
 <!-- il numero dopo ?v= va cambiato a ogni modifica di questi file:
      costringe telefoni e browser a riscaricarli invece di usare la copia vecchia -->
-<script src="assets/config.js?v=6"></script>
-<script src="assets/app.js?v=6"></script>
-<script src="assets/pannello-api.js?v=6"></script>
+<script src="assets/config.js?v=7"></script>
+<script src="assets/app.js?v=7"></script>
+<script src="assets/pannello-api.js?v=7"></script>
 <script>
 const $ = s => document.querySelector(s);
 let dati = null, modificato = false;
@@ -675,21 +695,39 @@ const STATI = {
   annullata:  {n:'Annullata',  c:'off'}
 };
 
-async function caricaPrenotazioni(){
+/* Le prenotazioni si ricontrollano da sole ogni pochi secondi: quando
+   qualcuno prenota dall'app, compare qui senza toccare "Aggiorna".
+   Il controllo di sfondo non svuota mai lo schermo e non ridisegna se
+   non è cambiato niente: altrimenti la pagina ballerebbe sotto le dita. */
+let prenotazioniViste = [];
+let improntaPren = null, idGiaVisti = null;
+
+function segnaOraAggiornamento(testo){
+  const p = $("#pren-aggiornato");
+  if(!p) return;
+  const ora = new Date().toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'});
+  p.textContent = testo || ('Aggiornato alle ' + ora + ' · si aggiorna da solo');
+}
+
+async function caricaPrenotazioni(silenzioso){
   const c = $("#lista-prenotazioni");
-  c.innerHTML = '<p class="vuoto">Carico…</p>';
+  if(!silenzioso) c.innerHTML = '<p class="vuoto">Carico…</p>';
   let out;
   try{
     const r = await fetch('/api/prenotazioni');
     out = await r.json();
     if(out.errore) throw new Error(out.errore);
   }catch(e){
-    c.innerHTML = `<p class="vuoto">Non riesco a leggere le prenotazioni.<br>
-      <span style="font-size:13px">${esc(e.message)}</span></p>`;
+    // in silenzio non si cancella quello che sta guardando
+    if(!silenzioso)
+      c.innerHTML = `<p class="vuoto">Non riesco a leggere le prenotazioni.<br>
+        <span style="font-size:13px">${esc(e.message)}</span></p>`;
+    else segnaOraAggiornamento('Collegamento assente: riprovo fra poco');
     return;
   }
 
   if(!out.collegato){
+    if(silenzioso) return;
     c.innerHTML = `<div class="pacchetto">
       <h3>Collega le prenotazioni</h3>
       <p style="color:var(--text-2);font-size:14px;margin:10px 0 0;line-height:1.6">
@@ -736,6 +774,23 @@ async function caricaPrenotazioni(){
   }
 
   const p = out.prenotazioni || [];
+  prenotazioniViste = p;
+  disegnaAuto();                       // lo storico auto legge le stesse righe
+  segnaOraAggiornamento();
+
+  /* cambiato qualcosa? se no, si lascia tutto com'è */
+  const impronta = JSON.stringify(p.map(v => [v.id, v.stato, v.data_app, v.ora,
+    v.totale, v.cliente_nome, v.servizio, v.note, v.auto]));
+  if(silenzioso && impronta === improntaPren) return;
+  improntaPren = impronta;
+
+  /* quali sono arrivate proprio adesso: si evidenziano per un attimo,
+     così una prenotazione nuova non passa inosservata */
+  const idOra = new Set(p.map(v => v.id));
+  const appenaArrivate = idGiaVisti
+    ? new Set([...idOra].filter(id => !idGiaVisti.has(id))) : new Set();
+  idGiaVisti = idOra;
+
   if(!p.length){
     c.innerHTML = '<p class="vuoto">Nessuna prenotazione ancora.<br>' +
       '<span style="font-size:13px">Arriveranno qui appena qualcuno prenota dall\'app.</span></p>';
@@ -748,8 +803,10 @@ async function caricaPrenotazioni(){
      consultabili in fondo, dalla più recente: senza questo, col tempo apri
      il pannello e vedi solo lavori di mesi fa. */
   const oggi = ROPE.dataISO(new Date());
-  const future  = p.filter(v => !v.data_app || v.data_app >= oggi);
-  const passate = p.filter(v => v.data_app && v.data_app < oggi).reverse();
+  const future  = p.filter(v => !v.data_app || v.data_app >= oggi)
+                   .sort((a,b) => String(a.data_app||'').localeCompare(String(b.data_app||''))
+                                  || String(a.ora||'').localeCompare(String(b.ora||'')));
+  const passate = p.filter(v => v.data_app && v.data_app < oggi);   // già dalla più recente
 
   [...future, ...passate].forEach((v, indice) => {
     if(indice === future.length && passate.length){
@@ -763,10 +820,11 @@ async function caricaPrenotazioni(){
     const auto = v.auto || {};
     const extra = (v.extra||[]).map(e => e.nome).filter(Boolean);
     const box = document.createElement('div');
-    box.className = 'pacchetto';
+    box.className = 'pacchetto' + (appenaArrivate.has(v.id) ? ' appena-arrivata' : '');
     box.innerHTML = `
       <div class="cima">
-        <div><h3>${esc(v.cliente_nome || 'Cliente')}</h3>
+        <div><h3>${esc(v.cliente_nome || 'Cliente')}${
+          appenaArrivate.has(v.id) ? ' <span class="tag on">appena arrivata</span>' : ''}</h3>
           <div class="st">${esc(v.servizio || '')}${v.taglia ? ' · ' + esc(String(v.taglia).toUpperCase()) : ''}</div></div>
         <span class="tag ${st.c}">${st.n}</span>
       </div>
@@ -839,7 +897,165 @@ async function caricaPrenotazioni(){
   });
 }
 
-$("#ricarica-pren").addEventListener('click', caricaPrenotazioni);
+$("#ricarica-pren").addEventListener('click', () => caricaPrenotazioni());
+
+/* Il controllo automatico: ogni 10 secondi, solo con la pagina aperta
+   davanti (a schermo spento o su un'altra scheda si ferma da solo). */
+let controlloAuto = null, controlloInCorso = false;
+
+async function controlla(){
+  if(controlloInCorso || document.visibilityState !== 'visible') return;
+  if(!ROPE_ACCESSO.dentro()) return;
+  controlloInCorso = true;
+  try{ await caricaPrenotazioni(true); }catch(e){}
+  finally{ controlloInCorso = false; }
+}
+function avviaControllo(){ if(!controlloAuto) controlloAuto = setInterval(controlla, 10000); }
+function fermaControllo(){ if(controlloAuto){ clearInterval(controlloAuto); controlloAuto = null; } }
+
+document.addEventListener('visibilitychange', () => {
+  if(document.visibilityState === 'visible'){ controlla(); avviaControllo(); }
+  else fermaControllo();
+});
+window.addEventListener('focus', controlla);
+
+/* ---------- storico delle auto ----------
+   Ricavato dalle prenotazioni: ogni auto con tutti i lavori che ha
+   fatto qui, dal più recente. Si cerca per targa, marca, modello o
+   nome del cliente. */
+let cercaAuto = "";
+
+function chiaveAuto(a){
+  a = a || {};
+  const t = String(a.targa || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if(t) return t;
+  return (String(a.marca || '') + ' ' + String(a.modello || ''))
+           .toUpperCase().replace(/\s+/g, ' ').trim();
+}
+
+function raggruppaPerAuto(righe){
+  const gruppi = new Map();
+  righe.forEach(v => {
+    const k = chiaveAuto(v.auto);
+    if(!k) return;
+    if(!gruppi.has(k)) gruppi.set(k, {chiave:k, auto:v.auto || {}, clienti:new Set(), lavori:[]});
+    const g = gruppi.get(k);
+    g.lavori.push(v);
+    if(v.cliente_nome) g.clienti.add(v.cliente_nome);
+    // marca e modello più completi fra quelli scritti nel tempo
+    if((v.auto||{}).marca && !g.auto.marca) g.auto.marca = v.auto.marca;
+    if((v.auto||{}).modello && !g.auto.modello) g.auto.modello = v.auto.modello;
+  });
+  const elenco = [...gruppi.values()];
+  elenco.forEach(g => g.lavori.sort((a,b) =>
+    String(b.data_app||'').localeCompare(String(a.data_app||'')) ||
+    String(b.ora||'').localeCompare(String(a.ora||''))));
+  elenco.sort((a,b) => String((b.lavori[0]||{}).data_app||'')
+                        .localeCompare(String((a.lavori[0]||{}).data_app||'')));
+  return elenco;
+}
+
+function disegnaAuto(){
+  const c = $("#lista-auto");
+  if(!c) return;
+  let elenco = raggruppaPerAuto(prenotazioniViste || []);
+
+  if(cercaAuto){
+    const q = cercaAuto.toLowerCase();
+    elenco = elenco.filter(g => {
+      const a = g.auto || {};
+      return [a.targa, a.marca, a.modello, a.colore, ...g.clienti]
+        .filter(Boolean).join(' ').toLowerCase().includes(q);
+    });
+  }
+
+  if(!elenco.length){
+    c.innerHTML = '<p class="vuoto">' + (cercaAuto
+      ? 'Nessuna auto trovata.'
+      : 'Nessuna auto ancora.<br><span style="font-size:13px">Compaiono qui appena arriva la prima prenotazione.</span>')
+      + '</p>';
+    return;
+  }
+
+  c.innerHTML = "";
+  elenco.forEach(g => {
+    const a = g.auto || {};
+    const nome = [a.marca, a.modello].filter(Boolean).join(' ') || 'Auto senza marca';
+    const ultimo = g.lavori[0] || {};
+    const fatti = g.lavori.filter(v => v.stato === 'completata').length;
+
+    const box = document.createElement('div');
+    box.className = 'pacchetto';
+    box.innerHTML = `
+      <div class="cima">
+        <div><h3>${esc(nome)}</h3>
+          <div class="st">${esc([...g.clienti].join(', ') || 'Cliente non indicato')}</div></div>
+        ${a.targa ? `<span class="tag on">${esc(a.targa)}</span>` : ''}
+      </div>
+      <div class="riga" style="cursor:default;margin-top:14px">
+        <span class="corpo">
+          <span class="nome">${g.lavori.length} ${g.lavori.length === 1 ? 'lavoro' : 'lavori'}${
+            fatti ? ' · ' + fatti + ' completati' : ''}</span>
+          <span class="meta">
+            <span class="tag">Ultimo: ${esc(ultimo.data_app || 'data da definire')}</span>
+            ${a.colore ? '<span class="tag">' + esc(a.colore) + '</span>' : ''}
+            ${ultimo.taglia ? '<span class="tag">Taglia ' + esc(String(ultimo.taglia).toUpperCase()) + '</span>' : ''}
+          </span>
+        </span>
+      </div>`;
+
+    const storia = document.createElement('div');
+    storia.hidden = true;
+    storia.innerHTML = '<div class="gruppo">Storico dei lavori</div>' +
+      g.lavori.map(v => {
+        const st = STATI[v.stato] || STATI.nuova;
+        const extra = (v.extra||[]).map(e => e.nome).filter(Boolean);
+        return `<div class="riga" style="cursor:default">
+          <span class="corpo">
+            <span class="nome">${esc(v.servizio || 'Servizio')}
+              <span class="tag ${st.c}">${st.n}</span></span>
+            <span class="meta">
+              <span class="tag">${esc(v.data_app || 'data da definire')}${v.ora ? ' · ' + esc(v.ora) : ''}</span>
+              ${v.pacchetto ? '<span class="tag">' + esc(v.pacchetto) + '</span>' : ''}
+              ${extra.length ? '<span class="tag">' + esc(extra.join(', ')) + '</span>' : ''}
+            </span>
+            ${v.note ? '<span class="meta" style="color:var(--text-2)">Note: ' + esc(v.note) + '</span>' : ''}
+          </span>
+          <span class="prezzi">${esc(v.totale || '')}</span>
+        </div>`;
+      }).join('');
+
+    const apri = document.createElement('button');
+    apri.className = 'btn piccolo';
+    apri.type = 'button';
+    apri.textContent = 'Vedi lo storico';
+    apri.setAttribute('aria-expanded', 'false');
+    apri.addEventListener('click', () => {
+      storia.hidden = !storia.hidden;
+      apri.setAttribute('aria-expanded', String(!storia.hidden));
+      apri.textContent = storia.hidden ? 'Vedi lo storico' : 'Nascondi lo storico';
+    });
+
+    const azioni = document.createElement('div');
+    azioni.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin-top:14px';
+    azioni.appendChild(apri);
+    const tel = (ultimo.cliente_tel || '').replace(/[^0-9+]/g,'');
+    if(tel){
+      const chiama = document.createElement('a');
+      chiama.className = 'btn piccolo'; chiama.href = 'tel:' + tel; chiama.textContent = 'Chiama';
+      azioni.appendChild(chiama);
+    }
+
+    box.appendChild(azioni);
+    box.appendChild(storia);
+    c.appendChild(box);
+  });
+}
+
+$("#cerca-auto").addEventListener('input', e => {
+  cercaAuto = e.target.value.trim();
+  disegnaAuto();
+});
 
 /* ---------- pacchetti ---------- */
 function disegnaPacchetti(){
@@ -1257,30 +1473,41 @@ function disegnaDurate(){
       r.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)';
       r.innerHTML = `<span style="flex:1;min-width:0;font-size:15px">${esc(l.titolo || l.nome)}
           <small style="display:block;color:var(--text-2);font-size:12px">${esc(p.nome)}</small></span>`;
-      const aGiorni = (l.durataGiorni || 1) > 1;
+      const aGiorni  = (l.durataGiorni || 1) > 1;
+      const daVedere = !!l.durataDaValutare;
       const box = document.createElement('div');
-      box.style.cssText = 'flex:0 0 168px;display:flex;align-items:center;gap:6px';
+      box.style.cssText = 'flex:0 0 200px;display:flex;align-items:center;gap:6px';
       box.innerHTML = `
         <input type="number" min="1" step="${aGiorni ? 1 : 15}" inputmode="numeric"
           value="${aGiorni ? l.durataGiorni : (l.durataMinuti || '')}"
           placeholder="${aGiorni ? '2' : '120'}"
-          aria-label="Durata di ${esc(l.titolo||l.nome)}" style="min-height:44px">
-        <select aria-label="Unità" style="min-height:44px;padding:0 8px">
-          <option value="min"    ${aGiorni ? '' : 'selected'}>min</option>
-          <option value="giorni" ${aGiorni ? 'selected' : ''}>giorni</option>
+          aria-label="Durata di ${esc(l.titolo||l.nome)}" style="min-height:44px"
+          ${daVedere ? 'hidden' : ''}>
+        <select aria-label="Come si conta la durata" style="min-height:44px;padding:0 8px;flex:1">
+          <option value="min"      ${(!aGiorni && !daVedere) ? 'selected' : ''}>min</option>
+          <option value="giorni"   ${(aGiorni && !daVedere) ? 'selected' : ''}>giorni</option>
+          <option value="valutare" ${daVedere ? 'selected' : ''}>da valutare</option>
         </select>`;
       const numero = box.querySelector('input'), unita = box.querySelector('select');
       const applica = () => {
         const v = numero.value === "" ? null : Number(numero.value);
-        if(unita.value === 'giorni'){
-          l.durataGiorni = v || 1; l.durataMinuti = null;
+        // "da valutare": il cliente sceglie solo il giorno in cui porta l'auto,
+        // e quel giorno resta occupato per intero finché non decidi tu.
+        if(unita.value === 'valutare'){
+          l.durataDaValutare = true; l.durataGiorni = 1; l.durataMinuti = null;
+        }else if(unita.value === 'giorni'){
+          l.durataDaValutare = false; l.durataGiorni = v || 1; l.durataMinuti = null;
         }else{
-          l.durataMinuti = v; l.durataGiorni = 1;
+          l.durataDaValutare = false; l.durataMinuti = v; l.durataGiorni = 1;
         }
+        numero.hidden = unita.value === 'valutare';
         segnaModificato();
       };
       numero.addEventListener('input', applica);
-      unita.addEventListener('change', () => { numero.step = unita.value === 'giorni' ? 1 : 15; applica(); });
+      unita.addEventListener('change', () => {
+        numero.step = unita.value === 'giorni' ? 1 : 15;
+        applica();
+      });
       r.appendChild(box);
       c.appendChild(r);
     });
@@ -1571,6 +1798,7 @@ $("#nuova-pren").addEventListener('click', async () => {
   ["#n-nome","#n-tel","#n-marca","#n-modello","#n-targa","#n-note","#n-ora-libera"]
     .forEach(s => $(s).value = "");
   $("#n-stato").value = 'confermata';
+  $("#n-giorni").value = 1;
   nRiempiPacchetti(); nRiempiTaglie(); nRiempiLivelli();
   $("#n-data").value = ROPE.dataISO(new Date());
   nAggiornaTotale();
@@ -1616,6 +1844,7 @@ async function apriModifica(v){
   $("#n-stato").value   = v.stato || 'nuova';
   $("#n-data").value    = v.data_app || ROPE.dataISO(new Date());
   $("#n-totale").value  = v.totale || "";
+  $("#n-giorni").value  = v.giorni || 1;
   $("#n-totale-aiuto").textContent = '(era ' + (v.totale || '—') + ')';
 
   dlgN.showModal();
@@ -1688,7 +1917,7 @@ async function nSalva(){
         data_app: iso,
         ora: ora,
         durata_minuti: ROPE.durataPerGiorno(p.id, l.id, data),
-        giorni: giorni,
+        giorni: Math.max(1, Number($("#n-giorni").value) || giorni),
         auto: {marca: $("#n-marca").value.trim(),
                modello: $("#n-modello").value.trim(),
                targa: $("#n-targa").value.trim().toUpperCase()},
@@ -1737,6 +1966,7 @@ if(!ACCESSO.locale){
 }
 
 function mostraAccesso(messaggio){
+  fermaControllo();          // fuori dall'accesso non si controlla niente
   $("#accesso").hidden = false;
   $("#esci").hidden = true;
   const e = $("#ac-errore");
@@ -1750,6 +1980,7 @@ function apriPannello(){
   $("#esci").hidden = false;
   $("#esci").title = "Esci da " + ACCESSO.chiSono();
   carica();
+  avviaControllo();    // da qui in poi le prenotazioni si aggiornano da sole
 }
 
 $("#accesso-form").addEventListener('submit', async e => {

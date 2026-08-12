@@ -2,7 +2,7 @@
 <html lang="it" class="dark">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>ROPE Car Detailing — Servizi</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -76,6 +76,8 @@
                   text-transform:uppercase;color:var(--accent);font-weight:600}
   .carta h3{font-family:var(--headline);font-size:19px;margin:6px 0 0;font-weight:600}
   .carta p{color:var(--text-2);font-size:14px;line-height:1.6;margin:10px 0 0;white-space:pre-line}
+  .carta p.sommario{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;
+                    overflow:hidden;white-space:normal}
   .carta .durata{display:inline-flex;align-items:center;gap:6px;margin-top:12px;
                  font-size:13px;color:var(--text-2)}
   .carta .durata .material-symbols-outlined{font-size:16px}
@@ -107,7 +109,18 @@
   nav.tab a.attivo{color:var(--accent)}
   nav.tab .material-symbols-outlined{font-size:22px}
 
+  /* scorciatoia per chi vuole un solo servizio, senza pacchetto */
+  .solo-extra{display:flex;align-items:center;gap:14px;text-decoration:none;color:inherit;
+       background:var(--surface);border:1px dashed var(--border);border-radius:18px;
+       padding:18px;margin:0 0 30px;transition:border-color .2s}
+  .solo-extra:hover{border-color:var(--accent)}
+  .solo-extra .corpo{flex:1;min-width:0}
+  .solo-extra .n{display:block;font-family:var(--headline);font-size:15px;font-weight:600}
+  .solo-extra .m{display:block;color:var(--text-2);font-size:13px;margin-top:4px;line-height:1.5}
+  .solo-extra .material-symbols-outlined{color:var(--text-2);flex:0 0 auto}
+
   .caricamento{text-align:center;color:var(--text-2);padding:60px 20px}
+  html,body,*{touch-action:manipulation}   /* niente zoom sul doppio tocco, su ogni elemento */
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -128,20 +141,36 @@
     <p class="spiega" id="spiega"></p>
   </div>
 
+  <a class="solo-extra" href="12-extra.html">
+    <span class="corpo">
+      <span class="n">Ti serve solo un servizio singolo?</span>
+      <span class="m">Lucidatura fari, sedili in pelle, cielo… scegli e prenota
+        senza prendere un pacchetto</span>
+    </span>
+    <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>
+  </a>
+
   <div id="pacchetti"><p class="caricamento">Carico i servizi…</p></div>
 </main>
 
 <nav class="tab">
   <a href="01-home.html"><span class="material-symbols-outlined" aria-hidden="true">home</span>Home</a>
   <a href="02-servizi.html" class="attivo"><span class="material-symbols-outlined" aria-hidden="true">list</span>Servizi</a>
-  <a href="04-data-e-ora.html"><span class="material-symbols-outlined" aria-hidden="true">calendar_month</span>Prenotazioni</a>
+  <a href="11-prenotazioni.html"><span class="material-symbols-outlined" aria-hidden="true">calendar_month</span>Prenotazioni</a>
   <a href="09-profilo.html"><span class="material-symbols-outlined" aria-hidden="true">person</span>Profilo</a>
 </nav>
 
 <script src="assets/config.js"></script>
+<script src="assets/account.js"></script>
 <script src="assets/app.js"></script>
 <script>
 const $ = s => document.querySelector(s);
+
+/* Nell'elenco mostriamo solo l'apertura della descrizione: il testo
+   completo si legge nel dettaglio del servizio, senza ripeterlo due volte. */
+function primoParagrafo(testo){
+  return String(testo || '').split(/\n\s*\n/)[0].trim();
+}
 const esc = t => String(t ?? "").replace(/[&<>"']/g, c =>
   ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
@@ -206,7 +235,7 @@ function disegna(){
         ${l.evidenza ? '<span class="badge">Più richiesto</span>' : ''}
         ${l.nome ? `<div class="livello">${esc(l.nome)}</div>` : ''}
         <h3>${esc(l.titolo || l.nome)}</h3>
-        ${l.descrizione ? `<p>${esc(l.descrizione)}</p>` : ''}
+        ${l.descrizione ? `<p class="sommario">${esc(primoParagrafo(l.descrizione))}</p>` : ''}
         ${l.durata ? `<span class="durata">
             <span class="material-symbols-outlined" aria-hidden="true">schedule</span>${esc(l.durata)}</span>` : ''}
         <div class="piede">
@@ -214,14 +243,20 @@ function disegna(){
             <small>${pr.richiesta ? 'Prezzo' : 'Prezzo ' + esc(tagliaNome())}</small>${pr.testo}</div>
           <button class="btn" type="button">Prenota</button>
         </div>`;
-      carta.querySelector('.btn').addEventListener('click', () => {
+      const vaiAlDettaglio = () => {
         localStorage.setItem('rope-selezione', JSON.stringify(
           {pacchettoId:p.id, livelloId:l.id, taglia, extra:[]}));
         location.href = `03-dettaglio-servizio.html?p=${encodeURIComponent(p.id)}&l=${encodeURIComponent(l.id)}`;
-      });
-      carta.querySelector('h3').style.cursor = 'pointer';
-      carta.querySelector('h3').addEventListener('click', () => {
-        location.href = `03-dettaglio-servizio.html?p=${encodeURIComponent(p.id)}&l=${encodeURIComponent(l.id)}`;
+      };
+      // tutta la scheda apre il dettaglio: titolo, descrizione, prezzo o pulsante.
+      // Prima rispondeva solo il titolo, e toccare la descrizione non faceva niente.
+      carta.style.cursor = 'pointer';
+      carta.addEventListener('click', vaiAlDettaglio);
+      carta.setAttribute('role', 'button');
+      carta.setAttribute('tabindex', '0');
+      carta.setAttribute('aria-label', 'Apri ' + (l.titolo || l.nome));
+      carta.addEventListener('keydown', ev => {
+        if(ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); vaiAlDettaglio(); }
       });
       box.appendChild(carta);
     });

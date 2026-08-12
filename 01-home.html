@@ -2,7 +2,7 @@
 <html lang="it" class="dark">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>ROPE Car Detailing — Home</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -77,11 +77,13 @@
 <nav class="tab">
   <a href="01-home.html" class="attivo"><span class="material-symbols-outlined" aria-hidden="true">home</span>Home</a>
   <a href="02-servizi.html"><span class="material-symbols-outlined" aria-hidden="true">list</span>Servizi</a>
-  <a href="04-data-e-ora.html"><span class="material-symbols-outlined" aria-hidden="true">calendar_month</span>Prenotazioni</a>
+  <a href="11-prenotazioni.html"><span class="material-symbols-outlined" aria-hidden="true">calendar_month</span>Prenotazioni</a>
   <a href="09-profilo.html"><span class="material-symbols-outlined" aria-hidden="true">person</span>Profilo</a>
 </nav>
 
 <script src="assets/config.js"></script>
+<script src="assets/account.js"></script>
+<script src="assets/avvisi.js"></script>
 <script src="assets/app.js"></script>
 <script>
 const $ = s => document.querySelector(s);
@@ -98,15 +100,34 @@ const $ = s => document.querySelector(s);
        ${ROPE.esc(d.promo.testo)}</div>`;
   }
 
-  /* prossimo appuntamento (per ora dalla prenotazione in corso) */
-  const s = ROPE.selezione();
-  if(s.pacchettoId && s.livelloId && s.data){
-    const t = ROPE.trovaLivello(s.pacchettoId, s.livelloId);
-    if(t){
-      $("#app-titolo").textContent = t.livello.titolo || t.livello.nome;
-      $("#app-quando").textContent = s.data + (s.ora ? ' · ' + s.ora : '');
+  /* Prossimo appuntamento: letto dal database, non dalla memoria del
+     telefono. Così se il centro lo completa o lo annulla, qui sparisce
+     senza bisogno di riavviare l'app. */
+  const MESI = ['gennaio','febbraio','marzo','aprile','maggio','giugno',
+                'luglio','agosto','settembre','ottobre','novembre','dicembre'];
+  const GIORNI = ['domenica','lunedì','martedì','mercoledì','giovedì','venerdì','sabato'];
+  const STATI = {nuova:'In attesa di conferma', confermata:'Confermata'};
+
+  async function mostraProssimo(){
+    const v = await ROPE.prossimoAppuntamento();
+    if(!v){
+      $("#app-titolo").textContent = 'Nessun appuntamento';
+      $("#app-quando").textContent = 'Prenota il tuo primo trattamento';
+      return;
     }
+    $("#app-titolo").textContent = v.servizio || 'Servizio';
+    let quando = 'Data da definire';
+    if(v.data_app){
+      const d = new Date(v.data_app + 'T00:00:00');
+      quando = GIORNI[d.getDay()] + ' ' + d.getDate() + ' ' + MESI[d.getMonth()];
+    }
+    $("#app-quando").textContent = quando + (v.ora ? ' · ' + v.ora : '')
+      + (STATI[v.stato] ? ' · ' + STATI[v.stato] : '');
   }
+  mostraProssimo();
+  /* si riaggiorna da solo mentre la home è aperta: se il centro conferma
+     o annulla, qui cambia senza dover cambiare schermata */
+  ROPE.tieniAggiornato(mostraProssimo, 15000);
 
   /* carosello servizi: tutti i livelli attivi */
   const cont = $("#servizi"); cont.innerHTML = "";
@@ -142,6 +163,10 @@ const $ = s => document.querySelector(s);
     });
   }
 })();
+
+/* riallinea i promemoria alle prenotazioni vere: se il centro ha spostato
+   o annullato qualcosa, gli avvisi sul telefono si correggono da soli */
+if(window.ROPE_AVVISI) ROPE_AVVISI.aggiorna().catch(() => {});
 </script>
 </body>
 </html>

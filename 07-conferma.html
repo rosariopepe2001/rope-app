@@ -2,7 +2,7 @@
 <html lang="it" class="dark">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Prenotazione confermata — ROPE Car Detailing</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -42,10 +42,12 @@
 
   <div class="carta" id="recap"></div>
 
-  <div class="due">
-    <button class="btn" type="button">Aggiungi al calendario</button>
-    <button class="btn" type="button" id="indicazioni">Indicazioni</button>
-  </div>
+  <p class="nota" id="promemoria" hidden>
+    <span class="material-symbols-outlined" aria-hidden="true">notifications_active</span>
+    <span></span>
+  </p>
+
+  <button class="btn pieno" type="button" id="indicazioni">Come arrivare</button>
 
   <div class="sezione">Il centro</div>
   <div class="carta" id="studio"></div>
@@ -54,6 +56,8 @@
 </main>
 
 <script src="assets/config.js"></script>
+<script src="assets/account.js"></script>
+<script src="assets/avvisi.js"></script>
 <script src="assets/app.js"></script>
 <script>
 const $ = s => document.querySelector(s);
@@ -61,7 +65,9 @@ const $ = s => document.querySelector(s);
 (async function(){
   let d;
   try{ d = await ROPE.carica(); }catch(e){ return; }
-  const s = ROPE.selezione();
+  /* La selezione è già stata svuotata appena la prenotazione è partita:
+     qui si legge la copia messa da parte in quel momento. */
+  const s = ROPE.ultimaConfermata();
   const t = s.pacchettoId ? ROPE.trovaLivello(s.pacchettoId, s.livelloId) : null;
 
   $("#quando").textContent = s.data
@@ -70,10 +76,10 @@ const $ = s => document.querySelector(s);
 
   const a = s.auto || {};
   const auto = [a.marca, a.modello].filter(Boolean).join(' ');
-  const tot = ROPE.totale();
+  const tot = ROPE.totale(s);
   $("#recap").innerHTML = `
-    ${t ? `<div class="voce"><div><div class="e">Servizio</div>
-      <div class="v">${ROPE.esc(t.livello.titolo || t.livello.nome)}</div></div>
+    ${(t || ROPE.soloExtra(s)) ? `<div class="voce"><div><div class="e">Servizio</div>
+      <div class="v">${ROPE.esc(ROPE.nomeDellaSelezione(s))}</div></div>
       <div style="text-align:right"><div class="e">Totale</div>
       <div class="v codice">${tot.testo}</div></div></div>` : ''}
     ${auto ? `<div class="voce"><div><div class="e">Auto</div>
@@ -94,6 +100,19 @@ const $ = s => document.querySelector(s);
       ${az.whatsapp ? `<a class="btn" href="https://wa.me/${ROPE.esc(tel.replace('+',''))}" target="_blank" rel="noopener">
         <span class="material-symbols-outlined" aria-hidden="true">chat</span>WhatsApp</a>` : ''}
     </div>`;
+
+  /* Ora che ha prenotato ha senso chiedergli il permesso per i promemoria:
+     lo chiediamo qui e non all'avvio, quando non saprebbe perché. */
+  if(window.ROPE_AVVISI && ROPE_AVVISI.disponibili()){
+    const esito = await ROPE_AVVISI.aggiorna(true);
+    const r = $("#promemoria");
+    if(r){
+      r.hidden = false;
+      r.querySelector('span:last-child').textContent = esito.programmati
+        ? 'Ti avvisiamo sul telefono due ore e mezza prima e un\'ora prima.'
+        : 'Attiva le notifiche per ricevere il promemoria prima dell\'appuntamento.';
+    }
+  }
 
   $("#indicazioni").addEventListener('click', () => {
     if(az.indirizzo)

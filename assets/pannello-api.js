@@ -133,7 +133,9 @@ window.ROPE_ACCESSO = (function(){
 
     async prenotazioniGET(){
       if(!BASE || !PUB) return risposta({collegato: false, prenotazioni: []});
-      const r = await rest("/rest/v1/prenotazioni?select=*&order=data_app.asc,ora.asc&limit=200");
+      /* Dalla più recente: così, anche quando saranno tante, quelle che
+         arrivano adesso ci sono sempre. Il pannello le riordina lui. */
+      const r = await rest("/rest/v1/prenotazioni?select=*&order=data_app.desc,ora.desc&limit=500");
       if(!r) return scaduta();
       if(r.status === 401) return scaduta();
       if(!r.ok) return risposta({errore: await leggiErrore(r)}, 502);

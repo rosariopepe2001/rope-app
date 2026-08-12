@@ -2,7 +2,7 @@
 <html lang="it" class="dark">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>ROPE Car Detailing — Profilo</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,22 +17,35 @@
   .testa h1{font-family:var(--headline);font-size:22px;margin:0;font-weight:700}
   .testa p{color:var(--text-2);font-size:13px;margin:2px 0 0}
 
-  .fedelta{background:linear-gradient(135deg,var(--surface) 0%,var(--surface-2) 100%);
-           border:1px solid var(--border);border-radius:20px;padding:20px;margin-bottom:8px}
-  .fedelta .e{font-family:var(--headline);font-size:11px;letter-spacing:.18em;
-              text-transform:uppercase;color:var(--text-2);font-weight:600}
-  .fedelta .n{font-family:var(--headline);font-size:17px;margin-top:6px;font-weight:600}
-  .barra-p{height:6px;border-radius:3px;background:var(--bg);margin-top:14px;overflow:hidden}
-  .barra-p i{display:block;height:100%;background:var(--accent);border-radius:3px}
-  .fedelta small{display:block;color:var(--text-2);font-size:12px;margin-top:8px}
 
   .auto{display:flex;gap:12px;overflow-x:auto;padding-bottom:6px}
   .auto::-webkit-scrollbar{display:none}
-  .auto .a{flex:0 0 190px;background:var(--surface);border:1px solid var(--border);
-           border-radius:16px;padding:16px}
+  .auto .a{flex:0 0 190px;min-height:104px;background:var(--surface);border:1px solid var(--border);
+           border-radius:16px;padding:16px;text-align:left;color:var(--text);
+           font-family:var(--body);cursor:pointer}
+  .auto .a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   .auto .a .m{font-family:var(--headline);font-size:15px;font-weight:600}
   .auto .a .t{font-size:13px;color:var(--text-2);margin-top:4px;letter-spacing:.06em}
   .auto .a .u{font-size:12px;color:var(--text-2);margin-top:10px}
+  .auto .aggiungi{display:flex;align-items:center;justify-content:center;gap:8px;
+           flex:0 0 150px;border-style:dashed;color:var(--text-2);
+           font-family:var(--headline);font-size:12px;letter-spacing:.1em;text-transform:uppercase}
+
+  /* finestra per aggiungere o correggere un'auto */
+  dialog{border:1px solid var(--border);background:var(--surface);color:var(--text);
+         border-radius:20px;padding:0;width:min(440px,calc(100vw - 32px));max-width:none}
+  dialog::backdrop{background:rgba(0,0,0,.65)}
+  dialog form{padding:22px}
+  dialog h3{font-family:var(--headline);font-size:17px;margin:0 0 4px}
+  dialog p.sub{color:var(--text-2);font-size:13px;margin:0 0 16px}
+  dialog label{display:block;font-size:13px;color:var(--text-2);margin:14px 0 6px}
+  dialog input,dialog select{width:100%;min-height:52px;background:var(--surface-2);color:var(--text);
+         border:1px solid var(--border);border-radius:12px;padding:12px 14px;
+         font-family:var(--body);font-size:16px}
+  dialog input:focus-visible,dialog select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  dialog .azioni{display:flex;gap:10px;margin-top:22px}
+  dialog .azioni .btn{flex:1}
+  dialog .btn.pericolo{color:var(--danger);border-color:rgba(232,128,122,.45)}
 
   .storia{display:flex;align-items:center;gap:14px;background:var(--surface);
           border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:8px}
@@ -52,6 +65,10 @@
   .voci a:hover,.voci button:hover{background:var(--surface-2)}
   .voci .material-symbols-outlined{font-size:20px;color:var(--text-2)}
   .voci .frec{margin-left:auto;font-size:18px}
+  /* riga di sola informazione: si legge, non si tocca */
+  .voci .riga-info{display:flex;align-items:center;gap:14px;min-height:56px;
+       padding:0 18px;border-bottom:1px solid var(--border);color:var(--text-2);font-size:15px}
+  .voci .riga-info:last-child{border-bottom:none}
 </style>
 </head>
 <body>
@@ -70,10 +87,10 @@
     </div>
   </div>
 
-  <div class="fedelta" id="fedelta"></div>
-
   <div class="sezione">Le mie auto</div>
   <div class="auto" id="auto"></div>
+  <p style="font-size:13px;color:var(--text-2);margin:10px 0 0">
+    Le auto salvate qui te le ritrovi già pronte quando prenoti.</p>
 
   <div class="sezione">Storico servizi</div>
   <div id="storico"></div>
@@ -81,64 +98,195 @@
   <div class="sezione">Contatti e impostazioni</div>
   <div class="voci" id="voci"></div>
 
+  <div class="sezione">Il tuo account</div>
+  <div class="voci">
+    <button type="button" id="esci">
+      <span class="material-symbols-outlined" aria-hidden="true">logout</span>Esci
+    </button>
+    <button type="button" id="elimina" style="color:var(--danger)">
+      <span class="material-symbols-outlined" aria-hidden="true"
+            style="color:var(--danger)">delete_forever</span>Elimina il mio account
+    </button>
+  </div>
+  <p class="nota" id="esito-account" role="alert" hidden></p>
+
   <p style="text-align:center;color:var(--text-2);font-size:12px;margin:28px 0 0">
     ROPE Car Detailing</p>
 </main>
 
+<dialog id="dlg-auto" aria-labelledby="dlg-auto-titolo">
+  <form method="dialog">
+    <h3 id="dlg-auto-titolo">La tua auto</h3>
+    <p class="sub">Salvata nel tuo account: la ritrovi anche cambiando telefono.</p>
+
+    <label for="a-marca">Marca</label>
+    <input type="text" id="a-marca" placeholder="BMW">
+    <label for="a-modello">Modello</label>
+    <input type="text" id="a-modello" placeholder="Serie 3">
+    <label for="a-targa">Targa</label>
+    <input type="text" id="a-targa" placeholder="GF921XT" autocapitalize="characters" spellcheck="false">
+    <label for="a-colore">Colore</label>
+    <input type="text" id="a-colore" placeholder="Nero">
+    <label for="a-taglia">Taglia</label>
+    <select id="a-taglia"></select>
+
+    <p id="a-errore" role="alert" style="color:var(--danger);font-size:13px;margin:12px 0 0" hidden></p>
+
+    <!-- Salva sta per primo di proposito: così, se batte Invio dentro un
+         campo, il telefono salva. Con l'ordine visivo lo rimettiamo a destra. -->
+    <div class="azioni">
+      <button class="btn primario" type="submit" value="ok" style="order:3">Salva</button>
+      <button class="btn pericolo" type="submit" value="elimina" id="a-elimina" style="order:1">Elimina</button>
+      <button class="btn" type="submit" value="annulla" style="order:2">Chiudi</button>
+    </div>
+  </form>
+</dialog>
+
 <nav class="tab">
   <a href="01-home.html"><span class="material-symbols-outlined" aria-hidden="true">home</span>Home</a>
   <a href="02-servizi.html"><span class="material-symbols-outlined" aria-hidden="true">list</span>Servizi</a>
-  <a href="04-data-e-ora.html"><span class="material-symbols-outlined" aria-hidden="true">calendar_month</span>Prenotazioni</a>
+  <a href="11-prenotazioni.html"><span class="material-symbols-outlined" aria-hidden="true">calendar_month</span>Prenotazioni</a>
   <a href="09-profilo.html" class="attivo"><span class="material-symbols-outlined" aria-hidden="true">person</span>Profilo</a>
 </nav>
 
 <script src="assets/config.js"></script>
+<script src="assets/account.js"></script>
 <script src="assets/app.js"></script>
 <script>
 const $ = s => document.querySelector(s);
 
-(async function(){
-  let d;
-  try{ d = await ROPE.carica(); }catch(e){ d = {azienda:{}}; }
-  const storico = ROPE.storico();
-  const auto = ROPE.mieAuto();
+if(!ROPE_ACCOUNT.serveAccesso()) throw new Error('accesso richiesto');
 
-  /* intestazione */
-  if(storico.length){
-    $("#nome").textContent = 'Cliente ROPE';
-    $("#sotto").textContent = storico.length === 1
-      ? '1 servizio prenotato' : storico.length + ' servizi prenotati';
+const NOMI_STATO = {nuova:'In attesa', confermata:'Confermata',
+                    completata:'Completata', annullata:'Annullata'};
+
+const MESI = ['gennaio','febbraio','marzo','aprile','maggio','giugno',
+              'luglio','agosto','settembre','ottobre','novembre','dicembre'];
+function inItaliano(iso){
+  if(!iso) return '—';
+  const d = new Date(iso + 'T00:00:00');
+  return d.getDate() + ' ' + MESI[d.getMonth()] + ' ' + d.getFullYear();
+}
+
+/* ---- le mie auto ----
+   Le legge ROPE.mieAuto(): stanno nell'account, non solo su questo telefono.
+   Qui si aggiungono, si correggono e si cancellano. */
+let autoInModifica = null;
+
+function ultimoServizioDi(auto, righe){
+  const k = ROPE.chiaveAuto(auto);
+  const v = righe.find(r => ROPE.chiaveAuto(r.auto || {}) === k);
+  return v ? v.data_app : null;
+}
+
+function apriAuto(auto){
+  autoInModifica = auto || null;
+  const a = auto || {};
+  $("#dlg-auto-titolo").textContent = auto ? 'La tua auto' : 'Aggiungi un\'auto';
+  $("#a-marca").value = a.marca || ""; $("#a-modello").value = a.modello || "";
+  $("#a-targa").value = a.targa || ""; $("#a-colore").value = a.colore || "";
+  $("#a-errore").hidden = true;
+  $("#a-elimina").hidden = !auto;
+  $("#a-elimina").disabled = !auto;
+
+  const taglie = (ROPE.dati && ROPE.dati.taglie) || [];
+  $("#a-taglia").innerHTML = '<option value="">Non lo so</option>' +
+    taglie.map(t => `<option value="${ROPE.esc(t.id)}"${t.id === a.taglia ? ' selected' : ''}>` +
+                    `${ROPE.esc(t.nome)}${t.etichetta ? ' — ' + ROPE.esc(t.etichetta) : ''}</option>`).join('');
+
+  $("#dlg-auto").showModal();
+}
+
+$("#dlg-auto").addEventListener('close', async () => {
+  const scelta = $("#dlg-auto").returnValue;
+  const vecchia = autoInModifica;
+  autoInModifica = null;
+  if(scelta === 'annulla' || scelta === '') return;
+
+  if(scelta === 'elimina'){
+    if(!vecchia) return;
+    if(!confirm('Togliere questa auto dal tuo profilo?')) return;
+    await ROPE.eliminaAuto(vecchia);
+    return disegnaProfilo(true);
   }
 
-  /* fedeltà: ogni 5 servizi */
-  const fatti = storico.length % 5;
-  $("#fedelta").innerHTML = `
-    <div class="e">Cliente ROPE</div>
-    <div class="n">${storico.length ? fatti + (fatti === 1 ? ' servizio' : ' servizi') + ' su 5'
-                                     : 'Inizia il tuo percorso'}</div>
-    <div class="barra-p"><i style="width:${(fatti/5*100)}%"></i></div>
-    <small>${storico.length ? 'Al quinto servizio ti aspetta un lavaggio omaggio.'
-                            : 'Prenota il primo trattamento per iniziare a raccogliere i servizi.'}</small>`;
+  const nuova = {marca: $("#a-marca").value, modello: $("#a-modello").value,
+                 targa: $("#a-targa").value, colore: $("#a-colore").value,
+                 taglia: $("#a-taglia").value || null};
+  if(!ROPE.autoValida(nuova)){
+    apriAuto(vecchia);
+    const e = $("#a-errore");
+    e.textContent = "Scrivi almeno la targa, oppure marca e modello.";
+    e.hidden = false;
+    return;
+  }
+  // se ha cambiato la targa, quella vecchia non deve restare lì doppia
+  if(vecchia && ROPE.chiaveAuto(vecchia) !== ROPE.chiaveAuto(nuova))
+    await ROPE.eliminaAuto(vecchia);
+  await ROPE.salvaAuto(nuova);
+  disegnaProfilo(true);
+});
+
+let improntaProfilo = null;
+
+async function disegnaProfilo(forza){
+  let d;
+  try{ d = await ROPE.carica(); }catch(e){ d = {azienda:{}}; }
+
+  const io = ROPE_ACCOUNT.chiSono() || {};
+
+  /* storico vero, preso dal database: mostra lo stato aggiornato dal centro */
+  let righe = [];
+  try{
+    const r = await ROPE_ACCOUNT.conAccount(
+      '/rest/v1/prenotazioni?select=*&order=data_app.desc,ora.desc&limit=100');
+    if(r.ok) righe = await r.json();
+  }catch(e){
+    if(e.motivo === 'scaduta') return ROPE_ACCOUNT.serveAccesso();
+  }
+
+  /* Si ridisegna solo se è cambiato davvero qualcosa: altrimenti, mentre
+     lui legge, la pagina si rifarebbe da capo ogni pochi secondi. */
+  const impronta = JSON.stringify(righe.map(v =>
+    [v.id, v.stato, v.data_app, v.ora, v.totale, v.servizio]));
+  if(!forza && impronta === improntaProfilo) return;
+  improntaProfilo = impronta;
+
+  const storico = righe.map(v => ({
+    servizio: v.servizio, data: v.data_app, ora: v.ora, auto: v.auto || {},
+    totale: v.totale, stato: NOMI_STATO[v.stato] || 'In attesa'
+  }));
+  const auto = await ROPE.mieAuto();
+
+  /* intestazione */
+  $("#nome").textContent = io.nome || 'Cliente ROPE';
+  $("#sotto").textContent = io.email || '';
 
   /* auto */
   const ca = $("#auto");
-  if(!auto.length){
-    ca.innerHTML = '<p class="vuoto" style="padding:20px 0;font-size:14px">' +
-                   'Nessuna auto registrata.</p>';
-  }else{
-    auto.forEach(x => {
-      const a = x.auto || {};
-      const div = document.createElement('div');
-      div.className = 'a';
-      div.innerHTML = `<div class="m">${ROPE.esc([a.marca,a.modello].filter(Boolean).join(' ') || 'Auto')}</div>
-        <div class="t">${ROPE.esc(a.targa || '')}</div>
-        <div class="u">Ultimo servizio: ${ROPE.esc(x.ultimo.data || '—')}</div>`;
-      ca.appendChild(div);
-    });
-  }
+  ca.innerHTML = "";
+  auto.forEach(a => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'a';
+    const ultimo = ultimoServizioDi(a, righe);
+    b.innerHTML = `<div class="m">${ROPE.esc(ROPE.nomeAuto(a) || 'Auto')}</div>
+      <div class="t">${ROPE.esc(a.targa || a.colore || '')}</div>
+      <div class="u">${ultimo ? 'Ultimo servizio: ' + ROPE.esc(inItaliano(ultimo))
+                              : 'Tocca per correggere'}</div>`;
+    b.addEventListener('click', () => apriAuto(a));
+    ca.appendChild(b);
+  });
+
+  const piu = document.createElement('button');
+  piu.type = 'button'; piu.className = 'a aggiungi';
+  piu.innerHTML = '<span class="material-symbols-outlined" aria-hidden="true">add</span>' +
+                  (auto.length ? 'Aggiungi' : 'Aggiungi la tua auto');
+  piu.addEventListener('click', () => apriAuto(null));
+  ca.appendChild(piu);
 
   /* storico */
   const cs = $("#storico");
+  cs.innerHTML = "";          // senza questo, a ogni ridisegno si accodava tutto di nuovo
   if(!storico.length){
     cs.innerHTML = '<p class="vuoto" style="padding:20px 0;font-size:14px">' +
                    'Nessun servizio ancora.<br>' +
@@ -151,7 +299,7 @@ const $ = s => document.querySelector(s);
       div.innerHTML = `<div class="c">
           <div class="s">${ROPE.esc(v.servizio || 'Servizio')}
             <span class="stato">${ROPE.esc(v.stato || 'Confermato')}</span></div>
-          <div class="d">${ROPE.esc(v.data || '')}${v.ora ? ' · ' + ROPE.esc(v.ora) : ''}
+          <div class="d">${ROPE.esc(inItaliano(v.data))}${v.ora ? ' · ' + ROPE.esc(v.ora) : ''}
             ${a.targa ? ' · ' + ROPE.esc(a.targa) : ''}</div>
         </div><div class="p">${ROPE.esc(v.totale || '')}</div>`;
       cs.appendChild(div);
@@ -168,16 +316,47 @@ const $ = s => document.querySelector(s);
   if(az.indirizzo) voci.push({i:'location_on', n:az.indirizzo,
     href:'https://maps.apple.com/?q=' + encodeURIComponent(az.indirizzo), esterno:true});
   if(az.orari) voci.push({i:'schedule', n:az.orari, statico:true});
-  voci.push({i:'notifications', n:'Notifiche', statico:true});
-  voci.push({i:'description', n:'Termini e privacy', statico:true});
+  voci.push({i:'description', n:'Informativa sulla privacy', href:'privacy.html'});
 
+  // le righe "statiche" sono informazioni, non pulsanti: niente freccia e
+  // niente finto tocco. Quelle con href portano davvero da qualche parte.
   $("#voci").innerHTML = voci.map(v => v.statico
-    ? `<button type="button"><span class="material-symbols-outlined" aria-hidden="true">${v.i}</span>${ROPE.esc(v.n)}
-       <span class="material-symbols-outlined frec">chevron_right</span></button>`
+    ? `<div class="riga-info"><span class="material-symbols-outlined" aria-hidden="true">${v.i}</span>${ROPE.esc(v.n)}</div>`
     : `<a href="${ROPE.esc(v.href)}" ${v.esterno ? 'target="_blank" rel="noopener"' : ''}>
        <span class="material-symbols-outlined" aria-hidden="true">${v.i}</span>${ROPE.esc(v.n)}
-       <span class="material-symbols-outlined frec">chevron_right</span></a>`).join('');
-})();
+       <span class="material-symbols-outlined frec" aria-hidden="true">chevron_right</span></a>`).join('');
+}
+
+/* uscire e cancellarsi: Apple pretende che si possa fare dall'app */
+$("#esci").addEventListener('click', () => {
+  if(!confirm('Vuoi uscire dal tuo account?')) return;
+  ROPE_ACCOUNT.esci();
+  location.replace('10-accesso.html');
+});
+
+$("#elimina").addEventListener('click', async () => {
+  const e = $("#esito-account");
+  if(!confirm('Elimini il tuo account?\n\n' +
+              'Perdi l\'accesso allo storico e dovrai registrarti di nuovo per prenotare. ' +
+              'Non si può annullare.')) return;
+  const b = $("#elimina");
+  b.disabled = true;
+  try{
+    await ROPE_ACCOUNT.eliminaAccount();
+    location.replace('10-accesso.html');
+  }catch(ex){
+    e.textContent = 'Non sono riuscito a eliminarlo: ' + ex.message +
+                    ' Se il problema resta, chiamaci e lo cancelliamo noi.';
+    e.style.color = 'var(--danger)';
+    e.hidden = false;
+    b.disabled = false;
+  }
+});
+
+disegnaProfilo(true);
+/* si aggiorna da solo mentre la guardi: se il centro conferma, completa o
+   annulla un lavoro, lo storico qui cambia senza cambiare schermata */
+ROPE.tieniAggiornato(disegnaProfilo, 15000);
 </script>
 </body>
 </html>

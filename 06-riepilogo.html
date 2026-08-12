@@ -2,7 +2,7 @@
 <html lang="it" class="dark">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>ROPE — Riepilogo</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -25,14 +25,6 @@
                margin-top:14px;padding-top:16px;border-top:1px solid var(--border)}
   .totale-riga .t{font-family:var(--headline);font-size:13px;letter-spacing:.12em;text-transform:uppercase}
   .totale-riga .n{font-family:var(--headline);font-size:32px;font-weight:700;color:var(--accent)}
-  .pagamento{display:flex;align-items:center;gap:14px;background:var(--surface);
-             border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:8px;cursor:pointer}
-  .pagamento.scelto{border-color:var(--accent)}
-  .pallino{width:22px;height:22px;border-radius:50%;border:1px solid var(--border);flex:0 0 auto;
-           display:flex;align-items:center;justify-content:center}
-  .pagamento.scelto .pallino{border-color:var(--accent)}
-  .pagamento.scelto .pallino::after{content:"";width:12px;height:12px;border-radius:50%;background:var(--accent)}
-  .pagamento input{position:absolute;opacity:0;width:0;height:0}
 </style>
 </head>
 <body>
@@ -52,8 +44,10 @@
   <div class="sezione">Il conto</div>
   <div class="carta" id="conto"></div>
 
-  <div class="sezione">Come vuoi pagare</div>
-  <div id="pagamenti"></div>
+  <div class="nota" id="dove-si-paga">
+    <span class="material-symbols-outlined" aria-hidden="true">info</span>
+    <span>Si paga in officina, al ritiro dell'auto.</span>
+  </div>
 </main>
 
 <div class="barra">
@@ -62,6 +56,7 @@
 </div>
 
 <script src="assets/config.js"></script>
+<script src="assets/account.js"></script>
 <script src="assets/app.js"></script>
 <script>
 const $ = s => document.querySelector(s);
@@ -72,8 +67,9 @@ let pagamento = 'sede';
   try{ d = await ROPE.carica(); }catch(e){ return; }
   const s = ROPE.selezione();
   const t = s.pacchettoId ? ROPE.trovaLivello(s.pacchettoId, s.livelloId) : null;
+  const soliExtra = ROPE.soloExtra(s);
 
-  if(!t){
+  if(!t && !soliExtra){
     document.querySelector('main').innerHTML =
       '<p class="vuoto">Nessuna prenotazione in corso.<br>' +
       '<a class="btn" href="02-servizi.html" style="margin-top:16px">Vedi i servizi</a></p>';
@@ -85,9 +81,9 @@ let pagamento = 'sede';
   const auto = [a.marca, a.modello].filter(Boolean).join(' ') || 'Non indicata';
   $("#dettagli").innerHTML = `
     <div class="voce"><div><div class="e">Servizio</div>
-      <div class="v">${ROPE.esc(t.livello.titolo || t.livello.nome)}</div></div>
-      <div style="text-align:right"><div class="e">Pacchetto</div>
-      <div class="v">${ROPE.esc(t.pacchetto.nome)}</div></div></div>
+      <div class="v">${ROPE.esc(ROPE.nomeDellaSelezione(s))}</div></div>
+      ${t ? `<div style="text-align:right"><div class="e">Pacchetto</div>
+      <div class="v">${ROPE.esc(t.pacchetto.nome)}</div></div>` : ''}</div>
     <div class="voce"><div><div class="e">Data e ora</div>
       <div class="v">${ROPE.esc(s.data || 'Da scegliere')}${s.ora ? ' · ' + ROPE.esc(s.ora) : ''}</div></div></div>
     <div class="voce"><div><div class="e">Auto</div>
@@ -101,9 +97,11 @@ let pagamento = 'sede';
 
   /* conto */
   const righe = [];
-  const pl = ROPE.prezzoDi(t.livello);
-  righe.push({n: t.livello.titolo || t.livello.nome,
-              p: (pl === 'richiesta' || pl === null) ? 'Su richiesta' : ROPE.euro(pl)});
+  if(t){
+    const pl = ROPE.prezzoDi(t.livello);
+    righe.push({n: t.livello.titolo || t.livello.nome,
+                p: (pl === 'richiesta' || pl === null) ? 'Su richiesta' : ROPE.euro(pl)});
+  }
   (s.extra||[]).forEach(e => {
     const x = ROPE.trovaExtra(e.pacchettoId || s.pacchettoId, e.id);
     if(x){
@@ -118,23 +116,7 @@ let pagamento = 'sede';
     (tot.suRichiesta ? '<div class="nota"><span class="material-symbols-outlined" aria-hidden="true">info</span>' +
       '<span>Ti ricontattiamo per confermare il preventivo.</span></div>' : '');
   $("#tot").textContent = tot.testo;
-
-  disegnaPagamenti();
 })();
-
-function disegnaPagamenti(){
-  const opzioni = [{id:'sede', n:'Paga in sede'}, {id:'carta', n:'Carta di credito'}];
-  const c = $("#pagamenti"); c.innerHTML = "";
-  opzioni.forEach(o => {
-    const l = document.createElement('label');
-    l.className = 'pagamento' + (o.id === pagamento ? ' scelto' : '');
-    l.innerHTML = `<span class="pallino"></span>
-      <input type="radio" name="pag" ${o.id === pagamento ? 'checked' : ''}>
-      <span>${o.n}</span>`;
-    l.querySelector('input').addEventListener('change', () => { pagamento = o.id; disegnaPagamenti(); });
-    c.appendChild(l);
-  });
-}
 
 $("#conferma").addEventListener('click', async () => {
   const btn = $("#conferma");
@@ -142,7 +124,7 @@ $("#conferma").addEventListener('click', async () => {
 
   const codice = '#RP-' + Math.floor(1000 + Math.random()*9000);
   const s = ROPE.aggiorna({pagamento, codice});
-  const t = ROPE.trovaLivello(s.pacchettoId, s.livelloId);
+  const t = s.pacchettoId ? ROPE.trovaLivello(s.pacchettoId, s.livelloId) : null;
 
   let inviata = false;
   try{
@@ -159,7 +141,7 @@ $("#conferma").addEventListener('click', async () => {
       box.className = 'nota';
       box.style.color = '#E8807A';
       box.setAttribute('role', 'alert');
-      $("#pagamenti").after(box);
+      $("#dove-si-paga").after(box);
     }
     const occupato = err.motivo === 'occupato';
     box.innerHTML = '<span class="material-symbols-outlined" aria-hidden="true">error</span>' +
@@ -174,12 +156,21 @@ $("#conferma").addEventListener('click', async () => {
   ROPE.aggiungiAStorico({
     codice, data:s.data, dataISO:s.dataISO, ora:s.ora, auto:s.auto, taglia:s.taglia,
     cliente:s.cliente,
-    servizio: t ? (t.livello.titolo || t.livello.nome) : '',
-    pacchetto: t ? t.pacchetto.nome : '',
+    servizio: ROPE.nomeDellaSelezione(s),
+    pacchetto: t ? t.pacchetto.nome : 'Servizi extra',
     totale: ROPE.totale(s).testo,
     stato: inviata ? 'Inviata' : 'Solo su questo telefono'
   });
-  ROPE.aggiorna({inviata});
+
+  /* L'auto resta salvata nel suo account: la prossima volta la ritrova
+     pronta e non deve riscriverla. */
+  if(ROPE.autoValida(s.auto))
+    await ROPE.salvaAuto(Object.assign({}, s.auto, {taglia: s.taglia || ROPE.taglia()}));
+
+  /* Prenotazione partita: la selezione si svuota qui, così servizio,
+     extra, data, ora e auto non si ritrovano scelti la prossima volta,
+     nemmeno chiudendo e riaprendo l'app. */
+  ROPE.chiudiPrenotazione(Object.assign({}, s, {inviata}));
   location.href = '07-conferma.html';
 });
 </script>
