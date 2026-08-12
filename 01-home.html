@@ -154,8 +154,10 @@ const $ = s => document.querySelector(s);
 
   /* galleria */
   const g = $("#lavori");
-  const fotoDi = l => l.foto || l.dopo || l.prima || "";
-  const album = d.galleria.filter(l => fotoDi(l));
+  // un lavoro può avere più foto: nel carosello si vede la prima
+  const copertina = l => (Array.isArray(l.foto) ? l.foto.filter(Boolean)[0]
+                                                : l.foto) || l.dopo || l.prima || "";
+  const album = d.galleria.filter(l => copertina(l));
   if(!album.length){
     g.innerHTML = '<p class="vuoto" style="padding:24px 0;font-size:14px">' +
                   'Nessun lavoro pubblicato ancora.</p>';
@@ -163,7 +165,7 @@ const $ = s => document.querySelector(s);
     album.forEach(l => {
       const b = document.createElement('button');
       b.className = 'lavoro'; b.type = 'button';
-      b.innerHTML = `<img src="${ROPE.esc(fotoDi(l))}" alt="${ROPE.esc(l.auto||'Lavoro ROPE')}" loading="lazy">
+      b.innerHTML = `<img src="${ROPE.esc(copertina(l))}" alt="${ROPE.esc(l.auto||'Lavoro ROPE')}" loading="lazy">
         <div class="cap">${ROPE.esc(l.auto || '')}<br>
           <span style="font-weight:400;color:var(--text-2)">${ROPE.esc(l.servizio||'')}</span></div>`;
       b.addEventListener('click', () => location.href = '08-galleria.html');

@@ -76,6 +76,21 @@
         background:var(--bg);border:1px solid var(--border)}
   .mini.senza{display:flex;align-items:center;justify-content:center;
         color:var(--danger);font-size:11px;text-align:center;line-height:1.2}
+  /* le foto di un lavoro, dentro la finestra */
+  .foto-elenco{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:12px}
+  .foto-elenco:empty{display:none}
+  .foto-elenco .scheda{width:96px}
+  .foto-elenco img{width:96px;height:96px;object-fit:cover;border-radius:12px;
+        border:1px solid var(--border);display:block;background:var(--bg)}
+  .foto-elenco .copertina{border-color:var(--accent)}
+  .foto-elenco .et{display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+        color:var(--accent);margin-top:5px;text-align:center;min-height:13px}
+  .foto-elenco .comandi{display:flex;gap:6px;margin-top:6px}
+  .foto-elenco .comandi button{flex:1;min-height:34px;border-radius:9px;border:1px solid var(--border);
+        background:var(--surface-2);color:var(--text);cursor:pointer;font-size:13px;line-height:1}
+  .foto-elenco .comandi button:disabled{opacity:.35;cursor:not-allowed}
+  .foto-elenco .comandi button:hover:not(:disabled){border-color:var(--accent)}
+  .foto-elenco .comandi .togli{color:var(--danger)}
   .riga .corpo{flex:1 1 auto;min-width:0}
   .riga .nome{display:block;font-weight:600;font-size:16px;line-height:1.3}
   .riga .meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px;
@@ -618,10 +633,12 @@
       <label for="l-nota">Nota breve</label>
       <input type="text" id="l-nota" placeholder="Rimossi graffi profondi sul cofano">
       <label for="l-foto">Foto</label>
-      <div class="foto">
-        <img id="l-foto-anteprima" alt="" hidden>
-        <span class="etichetta">Tocca per scegliere la foto</span>
-        <input type="file" id="l-foto" accept="image/*" aria-label="Foto del lavoro">
+      <p class="sub" style="margin:-2px 0 10px;font-size:13px">
+        Puoi metterne quante vuoi. La prima è quella che si vede nell'album.</p>
+      <div class="foto-elenco" id="l-foto-elenco"></div>
+      <div class="foto" style="min-height:96px">
+        <span class="etichetta">Tocca per aggiungere una o più foto</span>
+        <input type="file" id="l-foto" accept="image/*" multiple aria-label="Foto del lavoro">
       </div>
     </div>
     <div class="azioni">
@@ -1269,9 +1286,14 @@ function disegnaTaglie(){
 }
 
 /* ---------- galleria ---------- */
-/* La foto del lavoro. Le vecchie schede avevano prima/dopo: se ne trova
-   una, si tiene quella del "dopo" e l'album continua a funzionare. */
-const fotoLavoro = l => l.foto || l.dopo || l.prima || "";
+/* Le foto di un lavoro. Adesso sono un elenco: `foto` è un vettore.
+   Le schede vecchie avevano una foto sola, o prima/dopo: si leggono
+   lo stesso, senza perdere niente. */
+function fotoLavoro(l){
+  if(Array.isArray(l.foto)) return l.foto.filter(Boolean);
+  return [l.foto, l.dopo, l.prima].filter(Boolean).slice(0, 1);
+}
+const copertina = l => fotoLavoro(l)[0] || "";
 
 function disegnaGalleria(){
   const c = $("#lista-galleria"); c.innerHTML = "";
@@ -1288,12 +1310,13 @@ function disegnaGalleria(){
     const b = document.createElement('button');
     b.className = 'riga'; b.type = 'button';
     b.innerHTML = `
-      ${foto ? `<img class="mini" src="${esc(foto)}" alt="">`
-             : '<span class="mini senza">foto<br>mancante</span>'}
+      ${foto.length ? `<img class="mini" src="${esc(foto[0])}" alt="">`
+                    : '<span class="mini senza">foto<br>mancante</span>'}
       <span class="corpo">
         <span class="nome">${esc(l.auto || 'Senza titolo')}</span>
         <span class="meta">${esc(l.servizio || 'servizio da scrivere')}
           <span class="tag">${i + 1}ª nell'album</span>
+          ${foto.length > 1 ? `<span class="tag on">${foto.length} foto</span>` : ''}
         </span></span>`;
     b.addEventListener('click', () => apriLavoro(l));
     riga.appendChild(b);
@@ -1320,10 +1343,54 @@ function disegnaGalleria(){
 }
 function apriLavoro(l){
   lavoroCorrente = l;
+  // le schede vecchie diventano un elenco appena le apri
+  l.foto = fotoLavoro(l);
+  delete l.prima; delete l.dopo;
   $("#l-auto").value = l.auto || ""; $("#l-servizio").value = l.servizio || "";
   $("#l-nota").value = l.nota || "";
-  mostraAnteprima("#l-foto-anteprima", fotoLavoro(l));
+  disegnaFotoDelLavoro();
   $("#dlg-lavoro").showModal();
+}
+
+/* Le foto della scheda aperta: si tolgono e si riordinano.
+   La prima è la copertina, quella che il cliente vede nell'album. */
+function disegnaFotoDelLavoro(){
+  const c = $("#l-foto-elenco");
+  c.innerHTML = "";
+  const l = lavoroCorrente;
+  if(!l) return;
+  const foto = fotoLavoro(l);
+
+  foto.forEach((f, i) => {
+    const scheda = document.createElement('div');
+    scheda.className = 'scheda';
+    scheda.innerHTML = `<img src="${esc(f)}" alt="Foto ${i + 1}"${i === 0 ? ' class="copertina"' : ''}>
+      <span class="et">${i === 0 ? 'copertina' : ''}</span>`;
+
+    const comandi = document.createElement('div');
+    comandi.className = 'comandi';
+
+    const su = document.createElement('button');
+    su.type = 'button'; su.textContent = '←';
+    su.setAttribute('aria-label', 'Sposta questa foto più avanti');
+    su.disabled = i === 0;
+    su.addEventListener('click', () => {
+      [l.foto[i - 1], l.foto[i]] = [l.foto[i], l.foto[i - 1]];
+      disegnaFotoDelLavoro(); disegnaGalleria(); segnaModificato();
+    });
+
+    const togli = document.createElement('button');
+    togli.type = 'button'; togli.textContent = '✕'; togli.className = 'togli';
+    togli.setAttribute('aria-label', 'Togli questa foto');
+    togli.addEventListener('click', () => {
+      l.foto.splice(i, 1);
+      disegnaFotoDelLavoro(); disegnaGalleria(); segnaModificato();
+    });
+
+    comandi.appendChild(su); comandi.appendChild(togli);
+    scheda.appendChild(comandi);
+    c.appendChild(scheda);
+  });
 }
 $("#dlg-lavoro").addEventListener('close', () => {
   const dlg = $("#dlg-lavoro"), l = lavoroCorrente;
@@ -1342,7 +1409,7 @@ $("#dlg-lavoro").addEventListener('close', () => {
   lavoroCorrente = null;
 });
 $("#nuovo-lavoro").addEventListener('click', () => {
-  const l = {id:'g'+Date.now(), auto:"", servizio:"", nota:"", foto:""};
+  const l = {id:'g'+Date.now(), auto:"", servizio:"", nota:"", foto:[]};
   dati.galleria.push(l); apriLavoro(l);
 });
 
@@ -1395,10 +1462,33 @@ function collegaFoto(inputSel, anteprimaSel, assegna){
   });
 }
 collegaFoto("#p-foto",  "#p-foto-anteprima",  p => { if(pacchettoCorrente) pacchettoCorrente.foto = p; });
-collegaFoto("#l-foto",  "#l-foto-anteprima",  p => {
-  if(!lavoroCorrente) return;
-  lavoroCorrente.foto = p;
-  delete lavoroCorrente.prima; delete lavoroCorrente.dopo;   // via il vecchio prima/dopo
+/* Le foto del lavoro si caricano anche più d'una alla volta: si mandano
+   una dopo l'altra, dicendo a che punto siamo. Se una non passa, le altre
+   restano su lo stesso. */
+$("#l-foto").addEventListener('change', async e => {
+  const file = [...e.target.files];
+  e.target.value = "";
+  if(!file.length || !lavoroCorrente) return;
+  const l = lavoroCorrente;
+  if(!Array.isArray(l.foto)) l.foto = fotoLavoro(l);
+
+  let caricate = 0, fallite = 0;
+  for(let i = 0; i < file.length; i++){
+    $("#stato").className = "stato";
+    $("#stato").textContent = file.length > 1
+      ? `Carico la foto ${i + 1} di ${file.length}…` : "Carico la foto…";
+    try{
+      l.foto.push(await inviaFoto(file[i]));
+      caricate++;
+      disegnaFotoDelLavoro();
+    }catch(err){ fallite++; }
+  }
+
+  if(caricate){ disegnaGalleria(); segnaModificato(); }
+  if(fallite) segnaErrore(fallite === file.length
+    ? "Foto non caricate: controlla il collegamento."
+    : `${fallite} foto su ${file.length} non sono passate: riprova con quelle.`);
+  else if(!modificato) segnaSalvato();
 });
 
 /* ---------- salvataggio ---------- */
