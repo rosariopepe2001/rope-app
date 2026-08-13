@@ -111,7 +111,8 @@
   <p class="nota" id="esito-account" role="alert" hidden></p>
 
   <p style="text-align:center;color:var(--text-2);font-size:12px;margin:28px 0 0">
-    ROPE Car Detailing</p>
+    ROPE Car Detailing<br>
+    <span id="versione" style="opacity:.7"></span></p>
 </main>
 
 <dialog id="dlg-auto" aria-labelledby="dlg-auto-titolo">
@@ -149,6 +150,7 @@
   <a href="09-profilo.html" class="attivo"><span class="material-symbols-outlined" aria-hidden="true">person</span>Profilo</a>
 </nav>
 
+<script src="assets/versione.js"></script>
 <script src="assets/config.js"></script>
 <script src="assets/account.js"></script>
 <script src="assets/app.js"></script>
@@ -207,7 +209,12 @@ $("#dlg-auto").addEventListener('close', async () => {
     if(!vecchia) return;
     if(!confirm('Togliere questa auto dal tuo profilo?')) return;
     await ROPE.eliminaAuto(vecchia);
-    return disegnaProfilo(true);
+    return /* in fondo alla pagina: di quando sono i file di questa app.
+   Serve a capire, guardando il telefono, se la build e' quella nuova. */
+$("#versione").textContent = window.ROPE_VERSIONE
+  ? 'App aggiornata il ' + window.ROPE_VERSIONE : '';
+
+disegnaProfilo(true);
   }
 
   const nuova = {marca: $("#a-marca").value, modello: $("#a-modello").value,
