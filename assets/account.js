@@ -255,13 +255,14 @@ window.ROPE_ACCOUNT = (function(){
       await SL.initialize({google: {iOSClientId: idApp}});
     }catch(e){ return null; }
 
-    /* numero usa e getta: lo diamo a Google e lo ridiamo a Supabase,
-       così un vecchio gettone non si può riusare */
-    const usaEGetta = nonceCasuale();
+    /* Niente numero usa e getta qui: il componente ne mette uno suo dentro
+       il gettone, e Supabase rispondeva "Nonces mismatch" perché il nostro
+       non corrispondeva. Il gettone resta comunque sicuro: Supabase ne
+       verifica la firma di Google e che sia stato fatto per questa app. */
     let esito;
     try{
       esito = await SL.login({provider: "google",
-                              options: {scopes: ["email", "profile"], nonce: usaEGetta}});
+                              options: {scopes: ["email", "profile"]}});
     }catch(e){
       const testo = String((e && (e.message || e.code)) || "");
       const annullato = /cancel|annull|closed|-5/i.test(testo);
@@ -272,7 +273,7 @@ window.ROPE_ACCOUNT = (function(){
     if(!gettone) throw new Error("Google non ha restituito l'accesso. Riprova.");
 
     const o = await chiama("/auth/v1/token?grant_type=id_token",
-                           {provider: "google", id_token: gettone, nonce: usaEGetta});
+                           {provider: "google", id_token: gettone});
     ricorda(o);
     await aggiornaDaServer();
     if(!sessione) throw new Error("Google non ci ha fatto entrare. Riprova.");

@@ -553,8 +553,15 @@ window.ROPE = (function(){
     }catch(e){ return []; }
   }
 
-  /* L'elenco completo, senza doppioni, la più usata di recente per prima. */
+  /* L'elenco completo, senza doppioni, la più usata di recente per prima.
+     Tenuto da parte per la durata della schermata: le stesse auto vengono
+     chieste da più pezzi (taglie, riepilogo, profilo) e non ha senso
+     ridomandarle al database ogni volta. Si azzera appena se ne salva o
+     se ne cancella una. */
+  let autoInMemoria = null;
+
   async function mieAuto(){
+    if(autoInMemoria) return autoInMemoria;
     const daAccount = await autoDellAccount();
     const elenco = daAccount === null
       ? [...autoDelTelefono(), ...(await autoDallePrenotazioni())]
@@ -571,6 +578,7 @@ window.ROPE = (function(){
     });
     const tutte = [...viste.values()];
     if(daAccount === null) scriviAutoDelTelefono(tutte);
+    autoInMemoria = tutte;
     return tutte;
   }
 
@@ -579,6 +587,7 @@ window.ROPE = (function(){
   async function salvaAuto(auto){
     const a = ripulisciAuto(auto);
     if(!autoValida(a)) return false;
+    autoInMemoria = null;              // l'elenco è cambiato: si rilegge
 
     const resto = autoDelTelefono().filter(x => chiaveAuto(x) !== chiaveAuto(a));
     scriviAutoDelTelefono([a, ...resto]);
@@ -600,6 +609,7 @@ window.ROPE = (function(){
 
   async function eliminaAuto(auto){
     const a = auto || {};
+    autoInMemoria = null;              // l'elenco è cambiato: si rilegge
     const resto = autoDelTelefono().filter(x => chiaveAuto(x) !== chiaveAuto(a));
     scriviAutoDelTelefono(resto);
 
@@ -679,6 +689,47 @@ window.ROPE = (function(){
     return ridisegna;
   }
 
+  /* Le auto già salvate, sotto le taglie: si toccano e la taglia si
+     imposta da sola, così chi è già venuto non deve ricordarsela.
+     L'auto scelta resta nella prenotazione fino al riepilogo.
+     Non disegna niente se non ci sono auto salvate. */
+  async function disegnaAutoSalvate(contenitore, alCambio){
+    const c = typeof contenitore === 'string' ? document.querySelector(contenitore) : contenitore;
+    if(!c) return null;
+
+    let elenco = [];
+    try{ elenco = await mieAuto(); }catch(e){ return null; }
+    if(!elenco.length) return null;
+
+    function ridisegna(){
+      const scelta = chiaveAuto(selezione().auto || {});
+      c.innerHTML = "";
+      elenco.forEach(a => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.setAttribute('aria-pressed', String(!!scelta && chiaveAuto(a) === scelta));
+        b.innerHTML = `<span class="m">${esc(nomeAuto(a) || 'La mia auto')}</span>
+          <span class="t">${esc(a.targa || a.colore || 'tocca per usarla')}</span>`;
+        b.addEventListener('click', () => {
+          aggiorna({auto: {marca: a.marca || '', modello: a.modello || '',
+                           targa: a.targa || '', colore: a.colore || ''}});
+          if(a.taglia && dati && (dati.taglie || []).some(t => t.id === a.taglia)){
+            impostaTaglia(a.taglia);
+            aggiorna({taglia: a.taglia});
+          }
+          ridisegna();
+          if(alCambio) alCambio(a);
+        });
+        c.appendChild(b);
+      });
+    }
+
+    ridisegna();
+    const zona = c.closest('[data-zona-auto]') || c;
+    zona.hidden = false;
+    return ridisegna;
+  }
+
   function testoSpiegaTaglia(){
     const t = tagliaOggetto();
     if(!t) return '';
@@ -688,7 +739,7 @@ window.ROPE = (function(){
 
   return {carica, usaDati, esc, taglia, impostaTaglia, tagliaOggetto, selezione, salvaSelezione,
           aggiorna, azzera, chiudiPrenotazione, ultimaConfermata, trovaLivello, trovaExtra, prezzoDi, testoPrezzo, euro,
-          totale, disegnaChipsTaglia, testoSpiegaTaglia,
+          totale, disegnaChipsTaglia, testoSpiegaTaglia, disegnaAutoSalvate,
           storico, aggiungiAStorico, collegato, inviaPrenotazione, ancoraLibero,
           mieAuto, salvaAuto, eliminaAuto, chiaveAuto, autoValida, nomeAuto,
           giornoChiuso, slotLiberi, giorniLiberi, durataDi, giorniDi, dataISO,

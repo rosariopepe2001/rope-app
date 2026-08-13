@@ -16,8 +16,18 @@
   .appunt .riga{display:flex;align-items:center;gap:10px;color:var(--text-2);font-size:14px;margin-top:8px}
   .appunt .riga .material-symbols-outlined{font-size:18px}
   .appunt h3{font-family:var(--headline);font-size:19px;margin:0;font-weight:600}
+  /* Il carosello arriva fino al bordo dello schermo e ci scorre sotto:
+     così la scheda successiva "sbircia" di proposito, invece di sembrare
+     una pagina tagliata a metà parola. */
   .scorri{display:flex;gap:12px;overflow-x:auto;padding-bottom:8px;
-          scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
+          margin-left:-20px;margin-right:-20px;padding-left:20px;padding-right:20px;
+          scroll-padding-left:20px;
+          scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;
+          /* la scheda che sbircia sfuma invece di essere tranciata a
+             metà parola: così si capisce che si scorre, e non sembra
+             una pagina tagliata male */
+          -webkit-mask-image:linear-gradient(to right,#000 calc(100% - 40px),transparent);
+          mask-image:linear-gradient(to right,#000 calc(100% - 40px),transparent)}
   .scorri::-webkit-scrollbar{display:none}
   .mini{flex:0 0 240px;scroll-snap-align:start;background:var(--surface);
         border:1px solid var(--border);border-radius:18px;padding:18px;
@@ -101,6 +111,18 @@
 <script src="assets/app.js"></script>
 <script>
 const $ = s => document.querySelector(s);
+
+/* All'apertura dell'app, chi non ha ancora fatto l'accesso finisce sulla
+   schermata di accesso: da lì entra o si registra.
+
+   L'unica eccezione è chi ha scelto "guarda senza registrarti": quella
+   scelta dura finché l'app resta aperta, poi alla riapertura si torna a
+   chiedere l'accesso. Serve anche ad Apple, che non vuole app dove non
+   si può vedere niente senza un account. */
+if(!ROPE_ACCOUNT.dentro() && !sessionStorage.getItem('rope-ospite')){
+  location.replace('10-accesso.html?torna=01-home.html');
+  throw new Error('accesso richiesto');
+}
 
 /* Riquadri vuoti che respirano finché i dati non arrivano: così si vede
    subito la forma della pagina, invece del nero e di scritte sbagliate. */

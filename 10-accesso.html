@@ -117,6 +117,7 @@
   </div>
 
   <button class="minore" type="button" id="dimenticata">Ho dimenticato la password</button>
+  <button class="minore" type="button" id="ospite">Guarda i servizi senza registrarti</button>
 
   <p class="cambia" id="cambia-riga">
     <span id="cambia-testo">Non hai ancora un account?</span>
@@ -234,6 +235,14 @@ if(ROPE_ACCOUNT.googleDisponibile()){
     b.disabled = false; b.lastChild.textContent = testo;
   });
 }
+
+/* Chi vuole solo dare un'occhiata ai prezzi entra come ospite: la scelta
+   dura finché l'app resta aperta, poi si torna a chiedere l'accesso.
+   Per prenotare l'account serve comunque. */
+$("#ospite").addEventListener('click', () => {
+  try{ sessionStorage.setItem('rope-ospite', '1'); }catch(e){}
+  location.replace('01-home.html');
+});
 
 /* Il pulsante Apple si vede solo dentro l'app: nel browser non funzionerebbe */
 if(ROPE_ACCOUNT.appleDisponibile()){
