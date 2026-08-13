@@ -205,12 +205,23 @@ $("#modulo").addEventListener('submit', async e => {
 
 $("#dimenticata").addEventListener('click', async () => {
   const email = $("#c-email").value.trim();
-  if(!email) return messaggio("Scrivi prima la tua email qui sopra, poi tocca di nuovo.");
+  /* Senza email non si può fare niente, ma va detto in modo che si capisca:
+     si porta il dito dove serve, invece di dare un messaggio e basta. */
+  if(!email){
+    messaggio("Scrivi qui sopra la tua email, poi tocca di nuovo " +
+              "«Ho dimenticato la password»: ti mandiamo il collegamento per rifarla.", 'ok');
+    const campo = $("#c-email");
+    campo.focus();
+    campo.scrollIntoView({block:'center', behavior:'smooth'});
+    return;
+  }
   const b = $("#dimenticata");
   b.disabled = true;
   try{
     await ROPE_ACCOUNT.passwordDimenticata(email);
-    messaggio("Ti abbiamo mandato un'email per rifare la password.", 'ok');
+    messaggio("Fatto: abbiamo mandato un'email a " + email + ". Aprila e tocca il " +
+              "collegamento per scegliere una password nuova. Se non arriva entro " +
+              "qualche minuto, guarda nella posta indesiderata.", 'ok');
   }catch(ex){ messaggio(ex.message); }
   b.disabled = false;
 });

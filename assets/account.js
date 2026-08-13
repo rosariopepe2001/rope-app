@@ -115,6 +115,27 @@ window.ROPE_ACCOUNT = (function(){
     return [...b].map(x => ('0' + x.toString(16)).slice(-2)).join('');
   }
 
+  /* Legge il "numero usa e getta" scritto dentro il gettone di Google.
+
+     Serve perché Supabase pretende che il numero che gli passiamo sia
+     identico a quello che sta nel gettone: se ne manca uno dei due, o se
+     sono diversi, rifiuta l'accesso ("Nonces mismatch", "Passed nonce and
+     nonce in id_token should either both exist or not").
+     Il gettone è un testo in tre pezzi separati da punti: quello di mezzo
+     contiene i dati, scritti in base64. */
+  function nonceDelGettone(gettone){
+    try{
+      let corpo = String(gettone).split(".")[1];
+      if(!corpo) return "";
+      corpo = corpo.replace(/-/g, "+").replace(/_/g, "/");
+      while(corpo.length % 4) corpo += "=";
+      const dati = JSON.parse(decodeURIComponent(
+        atob(corpo).split("").map(c =>
+          "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2)).join("")));
+      return dati.nonce || "";
+    }catch(e){ return ""; }
+  }
+
   async function inSha256(testo){
     const dati = new TextEncoder().encode(testo);
     const somma = await crypto.subtle.digest('SHA-256', dati);
@@ -255,14 +276,15 @@ window.ROPE_ACCOUNT = (function(){
       await SL.initialize({google: {iOSClientId: idApp}});
     }catch(e){ return null; }
 
-    /* Niente numero usa e getta qui: il componente ne mette uno suo dentro
-       il gettone, e Supabase rispondeva "Nonces mismatch" perché il nostro
-       non corrispondeva. Il gettone resta comunque sicuro: Supabase ne
-       verifica la firma di Google e che sia stato fatto per questa app. */
+    /* Il numero usa e getta lo proponiamo noi, ma quello che conta è
+       quello che finisce davvero dentro il gettone: lo rileggiamo da lì
+       e passiamo quello a Supabase. Così i due coincidono sempre,
+       qualunque cosa ci faccia Google. */
+    const nostroNonce = nonceCasuale();
     let esito;
     try{
       esito = await SL.login({provider: "google",
-                              options: {scopes: ["email", "profile"]}});
+                              options: {scopes: ["email", "profile"], nonce: nostroNonce}});
     }catch(e){
       const testo = String((e && (e.message || e.code)) || "");
       const annullato = /cancel|annull|closed|-5/i.test(testo);
@@ -272,8 +294,11 @@ window.ROPE_ACCOUNT = (function(){
     const gettone = esito && esito.result && esito.result.idToken;
     if(!gettone) throw new Error("Google non ha restituito l'accesso. Riprova.");
 
-    const o = await chiama("/auth/v1/token?grant_type=id_token",
-                           {provider: "google", id_token: gettone});
+    const corpo = {provider: "google", id_token: gettone};
+    const nonceVero = nonceDelGettone(gettone);
+    if(nonceVero) corpo.nonce = nonceVero;   // se il gettone non ne ha, non se ne manda
+
+    const o = await chiama("/auth/v1/token?grant_type=id_token", corpo);
     ricorda(o);
     await aggiornaDaServer();
     if(!sessione) throw new Error("Google non ci ha fatto entrare. Riprova.");
@@ -346,8 +371,22 @@ window.ROPE_ACCOUNT = (function(){
     }).catch(() => {});
   }
 
+  /* Il collegamento dell'email deve portare da qualche parte: senza dirlo,
+     Supabase lo manda al suo indirizzo di ripiego e il cliente finisce su
+     una pagina vuota. Lo mandiamo alla schermata della nuova password.
+
+     Dentro l'app l'email si apre nel browser, non nell'app: quindi si usa
+     sempre l'indirizzo del sito. */
+  const SITO = "https://rosariopepe2001.github.io/rope-app/";
+
+  function dovePerLaPassword(){
+    if(dentroApp()) return SITO + "13-nuova-password.html";
+    return location.origin + location.pathname.replace(/[^/]*$/, "") + "13-nuova-password.html";
+  }
+
   async function passwordDimenticata(email){
-    await chiama("/auth/v1/recover", {email: String(email || "").trim()});
+    await chiama("/auth/v1/recover?redirect_to=" + encodeURIComponent(dovePerLaPassword()),
+                 {email: String(email || "").trim()});
     return true;
   }
 
