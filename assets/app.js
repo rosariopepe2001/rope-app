@@ -78,19 +78,42 @@ window.ROPE = (function(){
     return dati;
   }
 
-  async function carica(){
-    if(dati) return dati;
-    dati = await scarica();
-    dati.taglie = dati.taglie || [];
-    dati.pacchetti = dati.pacchetti || [];
-    dati.galleria = dati.galleria || [];
+  function prepara(d){
+    d.taglie = d.taglie || [];
+    d.pacchetti = d.pacchetti || [];
+    d.galleria = d.galleria || [];
 
     // la taglia della prenotazione in corso comanda su quella memorizzata,
     // altrimenti prezzo ed etichetta potrebbero non corrispondere
     const s = selezione();
-    if(s.taglia && dati.taglie.some(t => t.id === s.taglia))
+    if(s.taglia && d.taglie.some(t => t.id === s.taglia))
       localStorage.setItem('rope-taglia', s.taglia);
 
+    return d;
+  }
+
+  /* Ricontrolla se il centro ha cambiato qualcosa, ma senza far
+     aspettare nessuno: la copia nuova finisce nella memoria del telefono
+     e la usa la schermata successiva. Quella già disegnata non si tocca,
+     per non cambiare i prezzi sotto le dita di chi sta guardando. */
+  function aggiornaInSottofondo(){
+    setTimeout(() => { scarica().catch(() => {}); }, 300);
+  }
+
+  async function carica(){
+    if(dati) return dati;
+
+    /* Se sul telefono c'è già una copia, la schermata si apre SUBITO con
+       quella. Prima invece ogni tocco aspettava la risposta di Supabase,
+       e si vedeva un caricamento a ogni cambio di pagina. */
+    const salvati = daMemoria();
+    if(salvati){
+      dati = prepara(salvati);
+      aggiornaInSottofondo();
+      return dati;
+    }
+
+    dati = prepara(await scarica());
     return dati;
   }
 

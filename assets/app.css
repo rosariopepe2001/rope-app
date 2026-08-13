@@ -141,3 +141,8 @@ nav.tab .material-symbols-outlined{font-size:22px}
 html,body,*{touch-action:manipulation}
 
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* tasto "indietro" nella barra in alto */
+.top .indietro{background:none;border:none;color:var(--text);cursor:pointer;
+     min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;
+     margin-left:-10px}

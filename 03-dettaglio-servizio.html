@@ -83,7 +83,6 @@ function sistemaDescrizione(){
   b.onclick = () => {
     descrizioneAperta = !descrizioneAperta;
     sistemaDescrizione();
-  ROPE.disegnaAutoSalvate('#salvate', () => disegna());
     if(!descrizioneAperta) t.scrollIntoView({block:'nearest', behavior:'smooth'});
   };
 }
@@ -150,6 +149,10 @@ function disegna(){
   ROPE.disegnaChipsTaglia('#chips', () => disegna());
   $("#spiega").innerHTML = ROPE.testoSpiegaTaglia();
   sistemaDescrizione();
+  /* le auto già salvate, sotto le taglie: toccandone una la taglia si
+     imposta da sola. La schermata si ridisegna intera a ogni cambio,
+     quindi si riaggancia ogni volta. */
+  ROPE.disegnaAutoSalvate('#salvate', () => disegna());
 
   const extra = (pacchetto.extra||[]).filter(x => x.attivo !== false);
   if(extra.length){

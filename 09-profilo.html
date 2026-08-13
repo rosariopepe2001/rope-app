@@ -71,6 +71,9 @@
 <body>
 
 <header class="top">
+  <button type="button" class="indietro" aria-label="Torna indietro">
+    <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
+  </button>
   <img class="logo" src="assets/rope-logo.png" alt="ROPE Car Detailing">
   <span style="min-width:44px"></span>
 </header>
@@ -348,6 +351,12 @@ $("#elimina").addEventListener('click', async () => {
     e.hidden = false;
     b.disabled = false;
   }
+});
+
+/* Il tasto indietro: torna alla schermata da cui sei arrivato. */
+document.querySelector('.indietro').addEventListener('click', () => {
+  if(history.length > 1) history.back();
+  else location.href = '01-home.html';
 });
 
 disegnaProfilo(true);

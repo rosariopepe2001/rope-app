@@ -26,6 +26,9 @@
 <body>
 
 <header class="top">
+  <button type="button" class="indietro" aria-label="Torna indietro">
+    <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
+  </button>
   <img class="logo" src="assets/rope-logo.png" alt="ROPE Car Detailing">
   <span style="min-width:44px"></span>
 </header>
@@ -109,5 +112,15 @@
   <p>Se cambieremo qualcosa, aggiorneremo questa pagina e la data in alto.</p>
 </main>
 
+
+<script>
+/* Il tasto indietro: torna alla schermata da cui sei arrivato.
+   Se qualcuno apre questa pagina di rientro (per esempio da un link),
+   lo riportiamo alla home invece di lasciarlo bloccato qui. */
+document.querySelector('.indietro').addEventListener('click', () => {
+  if(history.length > 1) history.back();
+  else location.href = '01-home.html';
+});
+</script>
 </body>
 </html>
