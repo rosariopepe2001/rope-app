@@ -140,6 +140,7 @@ $("#conferma").addEventListener('click', async () => {
       box.setAttribute('role', 'alert');
       $("#dove-si-paga").after(box);
     }
+    ROPE.tocco('errore');
     const occupato = err.motivo === 'occupato';
     box.innerHTML = '<span class="material-symbols-outlined" aria-hidden="true">error</span>' +
       '<span>' + ROPE.esc(occupato ? err.message
@@ -150,6 +151,7 @@ $("#conferma").addEventListener('click', async () => {
     return;
   }
 
+  ROPE.tocco('fatto');          // un colpetto: la prenotazione è partita
   ROPE.aggiungiAStorico({
     codice, data:s.data, dataISO:s.dataISO, ora:s.ora, auto:s.auto, taglia:s.taglia,
     cliente:s.cliente,

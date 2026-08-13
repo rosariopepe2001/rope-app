@@ -126,6 +126,24 @@ window.ROPE = (function(){
     return dati;
   }
 
+  /* ---- il colpetto sotto il dito ----
+     Le app vere rispondono anche al tatto, non solo con gli occhi: un
+     colpetto leggero quando scegli qualcosa, uno più deciso quando la
+     prenotazione è andata. Nel browser non esiste e non fa niente. */
+  function vibrazione(){
+    const c = window.Capacitor;
+    return (c && c.Plugins && c.Plugins.Haptics) || null;
+  }
+  function tocco(tipo){
+    const h = vibrazione();
+    if(!h) return;
+    try{
+      if(tipo === 'fatto')      h.notification({type: 'SUCCESS'});
+      else if(tipo === 'errore') h.notification({type: 'ERROR'});
+      else                       h.impact({style: 'LIGHT'});
+    }catch(e){ /* telefono senza vibrazione: pazienza */ }
+  }
+
   /* ---- taglia scelta ---- */
   function taglia(){
     const t = localStorage.getItem('rope-taglia');
@@ -711,6 +729,7 @@ window.ROPE = (function(){
         b.setAttribute('aria-pressed', t.id === taglia());
         b.innerHTML = `${esc(t.nome)}<small>${esc(t.etichetta||'')}</small>`;
         b.addEventListener('click', () => {
+          tocco();
           impostaTaglia(t.id); aggiorna({taglia:t.id}); ridisegna();
           if(alCambio) alCambio(t.id);
         });
@@ -743,6 +762,7 @@ window.ROPE = (function(){
         b.innerHTML = `<span class="m">${esc(nomeAuto(a) || 'La mia auto')}</span>
           <span class="t">${esc(a.targa || a.colore || 'tocca per usarla')}</span>`;
         b.addEventListener('click', () => {
+          tocco();
           aggiorna({auto: {marca: a.marca || '', modello: a.modello || '',
                            targa: a.targa || '', colore: a.colore || ''}});
           if(a.taglia && dati && (dati.taglie || []).some(t => t.id === a.taglia)){
@@ -771,7 +791,7 @@ window.ROPE = (function(){
 
   return {carica, usaDati, esc, taglia, impostaTaglia, tagliaOggetto, selezione, salvaSelezione,
           aggiorna, azzera, chiudiPrenotazione, ultimaConfermata, trovaLivello, trovaExtra, prezzoDi, testoPrezzo, euro,
-          totale, disegnaChipsTaglia, testoSpiegaTaglia, disegnaAutoSalvate,
+          totale, disegnaChipsTaglia, testoSpiegaTaglia, disegnaAutoSalvate, tocco,
           storico, aggiungiAStorico, collegato, inviaPrenotazione, ancoraLibero,
           mieAuto, salvaAuto, eliminaAuto, chiaveAuto, autoValida, nomeAuto,
           giornoChiuso, slotLiberi, giorniLiberi, durataDi, giorniDi, dataISO,
