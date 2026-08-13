@@ -554,7 +554,10 @@
   <form method="dialog">
     <div class="testata">
       <h3 id="dlg-voce-titolo">Voce</h3>
-      <button class="btn piccolo" value="annulla" aria-label="Chiudi senza salvare">Chiudi</button>
+      <!-- type="button": se restasse un pulsante del modulo, sarebbe il primo,
+           e battendo Invio in un campo si chiuderebbe buttando via tutto -->
+      <button class="btn piccolo" type="button" data-chiudi
+              aria-label="Chiudi senza salvare">Chiudi</button>
     </div>
     <div class="contenuto">
       <label for="v-nome">Nome <small id="v-nome-aiuto"></small></label>
@@ -607,7 +610,10 @@
   <form method="dialog">
     <div class="testata">
       <h3 id="dlg-pacchetto-titolo">Pacchetto</h3>
-      <button class="btn piccolo" value="annulla" aria-label="Chiudi senza salvare">Chiudi</button>
+      <!-- type="button": se restasse un pulsante del modulo, sarebbe il primo,
+           e battendo Invio in un campo si chiuderebbe buttando via tutto -->
+      <button class="btn piccolo" type="button" data-chiudi
+              aria-label="Chiudi senza salvare">Chiudi</button>
     </div>
     <div class="contenuto">
       <label for="p-nome">Nome del pacchetto</label>
@@ -645,7 +651,10 @@
   <form method="dialog">
     <div class="testata">
       <h3 id="dlg-lavoro-titolo">Lavoro</h3>
-      <button class="btn piccolo" value="annulla" aria-label="Chiudi senza salvare">Chiudi</button>
+      <!-- type="button": se restasse un pulsante del modulo, sarebbe il primo,
+           e battendo Invio in un campo si chiuderebbe buttando via tutto -->
+      <button class="btn piccolo" type="button" data-chiudi
+              aria-label="Chiudi senza salvare">Chiudi</button>
     </div>
     <div class="contenuto">
       <label for="l-auto">Auto</label>
@@ -685,6 +694,31 @@ let pacchettoCorrente = null, lavoroCorrente = null;
 
 const esc = t => String(t ?? "").replace(/[&<>"']/g, c =>
   ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* Il "Chiudi" in alto alle finestre: chiude senza salvare.
+   Non è più un pulsante del modulo, altrimenti sarebbe lui a rispondere
+   all'Invio — ed è esattamente quello che succedeva: si batteva Invio su
+   un prezzo e la finestra si chiudeva senza tenere la modifica. */
+document.querySelectorAll('dialog [data-chiudi]').forEach(b => {
+  b.addEventListener('click', () => b.closest('dialog').close('annulla'));
+});
+
+/* L'Invio dentro una finestra vale come "Fatto".
+   Non ci si affida al comportamento automatico del modulo, che dipende
+   da quale pulsante viene per primo ed e' gia' stato fonte di guai:
+   qui si dice esplicitamente cosa deve succedere. Nelle note lunghe
+   (textarea) l'Invio serve invece ad andare a capo, quindi resta com'e'. */
+['#dlg-voce', '#dlg-pacchetto', '#dlg-lavoro'].forEach(quale => {
+  const dlg = document.querySelector(quale);
+  if(!dlg) return;
+  dlg.addEventListener('keydown', e => {
+    if(e.key !== 'Enter' || e.isComposing) return;
+    const t = e.target.tagName;
+    if(t === 'TEXTAREA' || t === 'BUTTON') return;
+    e.preventDefault();
+    dlg.close('ok');
+  });
+});
 
 /* ---------- stato ---------- */
 function segnaModificato(){
