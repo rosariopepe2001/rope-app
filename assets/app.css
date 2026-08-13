@@ -91,6 +91,10 @@ h1.tit{font-family:var(--headline);font-size:26px;font-weight:700;
 .salvate button[aria-pressed="true"] .t{color:var(--accent)}
 .salvate button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
+/* prezzo di listino sbarrato, accanto a quello scontato */
+s.prima{opacity:.55;text-decoration:line-through;font-weight:400;
+        font-size:.82em;margin-right:.35em}
+
 /* carte */
 .carta{background:var(--surface);border:1px solid var(--border);border-radius:20px;
        padding:20px;margin-bottom:12px;position:relative}

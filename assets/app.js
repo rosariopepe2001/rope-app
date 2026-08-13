@@ -714,18 +714,54 @@ window.ROPE = (function(){
     return p ? (p.extra||[]).find(x => x.id === extraId) || null : null;
   }
 
-  /* ---- prezzi ---- */
-  function prezzoDi(voce, idTaglia){
+  /* ---- prezzi e sconto ----
+     Lo sconto lo decide lui dal pannello, in percentuale, e vale su tutti
+     i prezzi finché la promozione è accesa. Il calcolo sta solo qui: così
+     ogni schermata, il totale e la prenotazione che finisce nel database
+     usano per forza lo stesso numero. */
+  function sconto(){
+    const p = (dati && dati.promo) || {};
+    const n = Number(p.percentuale) || 0;
+    return (p.attiva && n > 0 && n < 100) ? n : 0;
+  }
+
+  /* Il prezzo di listino, senza sconto. */
+  function prezzoPieno(voce, idTaglia){
     if(!voce) return null;
     if(voce.suRichiesta) return 'richiesta';
     const p = voce.prezzi ? voce.prezzi[idTaglia || taglia()] : null;
     return (p === null || p === undefined || p === "") ? null : p;
   }
+
+  /* Quanto paga davvero: all'euro, senza centesimi strani. */
+  function conSconto(prezzo){
+    const s = sconto();
+    if(!s || typeof prezzo !== 'number') return prezzo;
+    return Math.round(prezzo * (100 - s) / 100);
+  }
+
+  /* Il prezzo che conta per i conti: già scontato. */
+  function prezzoDi(voce, idTaglia){
+    return conSconto(prezzoPieno(voce, idTaglia));
+  }
+
   function testoPrezzo(voce, idTaglia){
     const p = prezzoDi(voce, idTaglia);
     if(p === 'richiesta') return 'Su richiesta';
     return p === null ? '—' : '€' + p;
   }
+
+  /* Prezzo da mettere a schermo: se c'è lo sconto si vedono tutti e due,
+     il vecchio sbarrato e il nuovo. Restituisce HTML, non testo. */
+  function testoPrezzoDoppio(voce, idTaglia){
+    const pieno = prezzoPieno(voce, idTaglia);
+    if(pieno === 'richiesta') return 'Su richiesta';
+    if(pieno === null) return '—';
+    const scontato = conSconto(pieno);
+    if(scontato === pieno) return '€' + pieno;
+    return '<s class="prima">€' + pieno + '</s> €' + scontato;
+  }
+
   function euro(n){ return '€' + n; }
 
   /* Totale della selezione: livello + extra scelti. */
@@ -743,7 +779,21 @@ window.ROPE = (function(){
       const p = prezzoDi(x, t);
       if(p === 'richiesta' || p === null) suRichiesta = true; else somma += p;
     });
-    return {somma, suRichiesta, testo: suRichiesta ? 'Su richiesta' : euro(somma)};
+    /* quanto sarebbe costato senza promozione: serve a far vedere
+       il risparmio nel riepilogo */
+    let pieno = 0;
+    if(trovato){
+      const p = prezzoPieno(trovato.livello, t);
+      if(typeof p === 'number') pieno += p;
+    }
+    (s.extra||[]).forEach(e => {
+      const x = trovaExtra(e.pacchettoId || s.pacchettoId, e.id || e);
+      const p = prezzoPieno(x, t);
+      if(typeof p === 'number') pieno += p;
+    });
+
+    return {somma, suRichiesta, pieno, risparmio: Math.max(0, pieno - somma),
+            testo: suRichiesta ? 'Su richiesta' : euro(somma)};
   }
 
   /* ---- pezzi di interfaccia riusabili ---- */
@@ -818,7 +868,8 @@ window.ROPE = (function(){
   }
 
   return {carica, usaDati, esc, taglia, impostaTaglia, tagliaOggetto, selezione, salvaSelezione,
-          aggiorna, azzera, chiudiPrenotazione, ultimaConfermata, trovaLivello, trovaExtra, prezzoDi, testoPrezzo, euro,
+          aggiorna, azzera, chiudiPrenotazione, ultimaConfermata, trovaLivello,
+          sconto, prezzoPieno, conSconto, testoPrezzoDoppio, trovaExtra, prezzoDi, testoPrezzo, euro,
           totale, disegnaChipsTaglia, testoSpiegaTaglia, disegnaAutoSalvate, tocco,
           storico, aggiungiAStorico, collegato, inviaPrenotazione, ancoraLibero,
           mieAuto, salvaAuto, eliminaAuto, chiaveAuto, autoValida, nomeAuto,

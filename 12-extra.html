@@ -98,7 +98,7 @@ function disegna(){
     b.innerHTML = `
       <span class="segno"><span class="material-symbols-outlined" aria-hidden="true">check</span></span>
       <span class="corpo"><span class="n">${ROPE.esc(extra.nome)}</span></span>
-      <span class="p">${ROPE.testoPrezzo(extra)}</span>`;
+      <span class="p">${ROPE.testoPrezzoDoppio(extra)}</span>`;
     b.addEventListener('click', () => {
       ROPE.tocco();
       if(selezionato(extra.id)) scelti = scelti.filter(x => x.id !== extra.id);

@@ -176,7 +176,7 @@ function disegna(){
       l.innerHTML = `<span class="quadro"><span class="material-symbols-outlined" aria-hidden="true">check</span></span>
         <input type="checkbox" ${attivo ? 'checked' : ''}>
         <span class="n">${ROPE.esc(x.nome)}</span>
-        <span class="p">${ROPE.testoPrezzo(x)}</span>`;
+        <span class="p">${ROPE.testoPrezzoDoppio(x)}</span>`;
       l.querySelector('input').addEventListener('change', e => {
         ROPE.tocco();
         const s = ROPE.selezione(); s.extra = s.extra || [];

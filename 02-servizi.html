@@ -133,6 +133,8 @@
   .caricamento{text-align:center;color:var(--text-2);padding:60px 20px}
   html,body,*{touch-action:manipulation}   /* niente zoom sul doppio tocco, su ogni elemento */
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+  s.prima{opacity:.55;text-decoration:line-through;font-weight:400;
+          font-size:.82em;margin-right:.35em}
 </style>
 </head>
 <body>
@@ -228,11 +230,14 @@ function disegnaChips(){
     : '';
 }
 
+/* Il prezzo da mettere a schermo. Lo sconto della promozione lo calcola
+   ROPE, così è lo stesso numero che vedrà nel riepilogo e che finirà
+   nella prenotazione: qui non si rifanno i conti a mano. */
 function prezzo(v){
   if(v.suRichiesta) return {testo:'Su richiesta', richiesta:true};
   const p = v.prezzi ? v.prezzi[taglia] : null;
   if(p === null || p === undefined || p === "") return {testo:'—', richiesta:true};
-  return {testo:'€' + p, richiesta:false};
+  return {testo: ROPE.testoPrezzoDoppio(v, taglia), richiesta:false};
 }
 
 function disegna(){

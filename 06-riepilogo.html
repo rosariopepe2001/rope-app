@@ -95,21 +95,24 @@ let pagamento = 'sede';
   /* conto */
   const righe = [];
   if(t){
-    const pl = ROPE.prezzoDi(t.livello);
     righe.push({n: t.livello.titolo || t.livello.nome,
-                p: (pl === 'richiesta' || pl === null) ? 'Su richiesta' : ROPE.euro(pl)});
+                p: ROPE.testoPrezzoDoppio(t.livello)});
   }
   (s.extra||[]).forEach(e => {
     const x = ROPE.trovaExtra(e.pacchettoId || s.pacchettoId, e.id);
-    if(x){
-      const p = ROPE.prezzoDi(x);
-      righe.push({n: x.nome, p: (p === 'richiesta' || p === null) ? 'Su richiesta' : ROPE.euro(p)});
-    }
+    if(x) righe.push({n: x.nome, p: ROPE.testoPrezzoDoppio(x)});
   });
   const tot = ROPE.totale();
   $("#conto").innerHTML =
     righe.map(r => `<div class="conto"><span class="c">${ROPE.esc(r.n)}</span><span>${r.p}</span></div>`).join('') +
     `<div class="totale-riga"><span class="t">Totale</span><span class="n">${tot.testo}</span></div>` +
+    /* quanto risparmia grazie alla promozione: e' la cosa che vuole leggere */
+    (tot.risparmio > 0
+      ? `<div class="conto" style="padding-top:0"><span class="c">Prezzo di listino</span>
+           <span><s class="prima">${ROPE.euro(tot.pieno)}</s></span></div>
+         <div class="nota"><span class="material-symbols-outlined" aria-hidden="true">local_offer</span>
+           <span>Con la promozione risparmi ${ROPE.euro(tot.risparmio)}.</span></div>`
+      : '') +
     (tot.suRichiesta ? '<div class="nota"><span class="material-symbols-outlined" aria-hidden="true">info</span>' +
       '<span>Ti ricontattiamo per confermare il preventivo.</span></div>' : '');
   $("#tot").textContent = tot.testo;

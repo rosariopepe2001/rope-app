@@ -195,7 +195,7 @@ document.addEventListener('rope-dati-nuovi', () => { location.reload(); });
     (p.livelli||[]).filter(l => l.attivo !== false).forEach(l => {
       const b = document.createElement('button');
       b.className = 'mini'; b.type = 'button';
-      const testo = ROPE.testoPrezzo(l);
+      const testo = ROPE.testoPrezzoDoppio(l);   // col prezzo vecchio sbarrato, se c'è sconto
       b.innerHTML = `<div class="pk">${ROPE.esc(p.nome)}</div>
         <h4>${ROPE.esc(l.titolo || l.nome)}</h4>
         <div class="pz">${testo === 'Su richiesta' ? '' : '<span>da </span>'}${testo}</div>`;

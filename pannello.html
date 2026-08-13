@@ -442,6 +442,17 @@
 
     <label for="f-promo-testo">Testo della promozione</label>
     <input type="text" id="f-promo-testo" placeholder="Febbraio: ceramica -20%">
+
+    <label for="f-promo-sconto">Sconto in percentuale</label>
+    <div class="taglie" style="grid-template-columns:1fr">
+      <div class="cella"><div class="euro">
+        <span style="left:auto;right:14px">%</span>
+        <input type="number" id="f-promo-sconto" min="0" max="90" step="1"
+               placeholder="0" style="padding-left:14px">
+      </div></div>
+    </div>
+    <p class="nota" id="anteprima-sconto" style="margin-top:12px">
+      Metti 0 per non applicare nessuno sconto.</p>
   </section>
 </main>
 
@@ -1561,8 +1572,43 @@ function riempiInfo(){
   $("#f-indirizzo").value = a.indirizzo || ""; $("#f-telefono").value = a.telefono || "";
   $("#f-whatsapp").value = a.whatsapp || "";   $("#f-orari").value = a.orari || "";
   $("#f-promo-attiva").checked = !!p.attiva;   $("#f-promo-testo").value = p.testo || "";
+  $("#f-promo-sconto").value = p.percentuale || "";
+  anteprimaSconto();
 }
-["#f-indirizzo","#f-telefono","#f-whatsapp","#f-orari","#f-promo-attiva","#f-promo-testo"]
+
+/* Fa vedere subito l'effetto dello sconto sui prezzi veri, così non deve
+   fidarsi: prende il primo servizio del listino e mostra prima e dopo. */
+function anteprimaSconto(){
+  const c = $("#anteprima-sconto");
+  const n = Number($("#f-promo-sconto").value) || 0;
+  const acceso = $("#f-promo-attiva").checked;
+
+  if(!n){
+    c.innerHTML = "Metti 0 per non applicare nessuno sconto.";
+    return;
+  }
+  if(n < 0 || n > 90){
+    c.innerHTML = "Lo sconto deve stare fra 0 e 90.";
+    return;
+  }
+
+  const esempi = [];
+  (dati.pacchetti || []).forEach(pa => (pa.livelli || []).forEach(l => {
+    if(esempi.length >= 3) return;
+    const prezzo = (l.prezzi || {})[(dati.taglie[0] || {}).id];
+    if(typeof prezzo === 'number')
+      esempi.push(esc(l.titolo || l.nome) + ': <s>€' + prezzo + '</s> €'
+                  + Math.round(prezzo * (100 - n) / 100));
+  }));
+
+  c.innerHTML = (acceso
+      ? "Con lo sconto del " + n + "% i clienti pagano:"
+      : "Lo sconto è pronto ma <b>spento</b>: accendi l'interruttore qui sopra. Sarebbe:")
+    + "<br>" + (esempi.join("<br>") || "nessun prezzo da mostrare")
+    + "<br><small>Nell'app si vede il prezzo vecchio sbarrato e quello nuovo.</small>";
+}
+["#f-indirizzo","#f-telefono","#f-whatsapp","#f-orari","#f-promo-attiva",
+ "#f-promo-testo","#f-promo-sconto"]
   .forEach(sel => $(sel).addEventListener('input', () => {
     dati.azienda.indirizzo = $("#f-indirizzo").value;
     dati.azienda.telefono  = $("#f-telefono").value;
@@ -1570,6 +1616,8 @@ function riempiInfo(){
     dati.azienda.orari     = $("#f-orari").value;
     dati.promo.attiva      = $("#f-promo-attiva").checked;
     dati.promo.testo       = $("#f-promo-testo").value;
+    dati.promo.percentuale = Math.max(0, Math.min(90, Number($("#f-promo-sconto").value) || 0));
+    anteprimaSconto();
     segnaModificato();
   }));
 
