@@ -178,6 +178,7 @@ function disegna(){
         <span class="n">${ROPE.esc(x.nome)}</span>
         <span class="p">${ROPE.testoPrezzo(x)}</span>`;
       l.querySelector('input').addEventListener('change', e => {
+        ROPE.tocco();
         const s = ROPE.selezione(); s.extra = s.extra || [];
         if(e.target.checked) s.extra.push({id:x.id, pacchettoId:pacchetto.id});
         else s.extra = s.extra.filter(i => i.id !== x.id);

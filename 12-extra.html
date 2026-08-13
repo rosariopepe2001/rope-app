@@ -100,6 +100,7 @@ function disegna(){
       <span class="corpo"><span class="n">${ROPE.esc(extra.nome)}</span></span>
       <span class="p">${ROPE.testoPrezzo(extra)}</span>`;
     b.addEventListener('click', () => {
+      ROPE.tocco();
       if(selezionato(extra.id)) scelti = scelti.filter(x => x.id !== extra.id);
       else scelti.push({id: extra.id, pacchettoId: pacchetto.id});
       b.setAttribute('aria-pressed', selezionato(extra.id));

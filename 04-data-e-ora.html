@@ -147,6 +147,7 @@ function disegnaMese(){
     b.setAttribute('aria-pressed', !!(scelta && data.getTime() === scelta.getTime()));
     if(chiuso) b.title = 'Chiuso';
     b.addEventListener('click', async () => {
+      ROPE.tocco();
       scelta = data; ora = null; disegnaMese(); controlla();
       await disegnaOrari();
       /* scelto il giorno, la pagina scende da sola sugli orari:
@@ -223,7 +224,7 @@ async function disegnaOrari(){
     b.disabled = !s.libero;
     if(!s.libero) b.title = 'Non disponibile';
     b.setAttribute('aria-pressed', s.ora === ora);
-    b.addEventListener('click', () => { ora = s.ora; disegnaOrari(); controlla(); });
+    b.addEventListener('click', () => { ROPE.tocco(); ora = s.ora; disegnaOrari(); controlla(); });
     c.appendChild(b);
   });
 }

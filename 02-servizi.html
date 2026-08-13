@@ -226,6 +226,7 @@ function disegnaChips(){
     b.setAttribute('aria-pressed', t.id === taglia);
     b.innerHTML = `${esc(t.nome)}<small>${esc(t.etichetta||'')}</small>`;
     b.addEventListener('click', () => {
+      ROPE.tocco();
       taglia = t.id; localStorage.setItem('rope-taglia', taglia);
       disegnaChips(); disegna();
     });
