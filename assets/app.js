@@ -92,12 +92,21 @@ window.ROPE = (function(){
     return d;
   }
 
-  /* Ricontrolla se il centro ha cambiato qualcosa, ma senza far
-     aspettare nessuno: la copia nuova finisce nella memoria del telefono
-     e la usa la schermata successiva. Quella già disegnata non si tocca,
-     per non cambiare i prezzi sotto le dita di chi sta guardando. */
+  /* Ricontrolla in sottofondo se il centro ha cambiato qualcosa, senza
+     far aspettare nessuno. Se è cambiato davvero — un prezzo, un orario,
+     una foto — la schermata si rifà con i dati nuovi: chi sta guardando
+     non deve vedere un prezzo vecchio. Se non è cambiato niente, non
+     succede nulla e nessuno se ne accorge. */
   function aggiornaInSottofondo(){
-    setTimeout(() => { scarica().catch(() => {}); }, 300);
+    setTimeout(async () => {
+      try{
+        const nuovi = await scarica();
+        if(!nuovi || !sensati(nuovi)) return;
+        if(JSON.stringify(nuovi) === JSON.stringify(dati)) return;
+        dati = prepara(nuovi);
+        document.dispatchEvent(new CustomEvent('rope-dati-nuovi'));
+      }catch(e){ /* rete assente: si riprova alla schermata dopo */ }
+    }, 300);
   }
 
   async function carica(){

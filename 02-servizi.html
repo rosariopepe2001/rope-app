@@ -302,6 +302,13 @@ function tagliaNome(){
 }
 
 avvia();
+
+/* Se il centro cambia un prezzo (o un orario, o una foto) mentre stai
+   guardando, la schermata si rifà da sola con i dati nuovi. */
+document.addEventListener('rope-dati-nuovi', () => {
+  dati = ROPE.dati;
+  disegnaChips(); disegna();
+});
 </script>
 </body>
 </html>

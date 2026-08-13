@@ -112,6 +112,17 @@ function sistemaDescrizione(){
 
   disegna();
 })();
+/* Se il centro cambia un prezzo mentre stai guardando, la schermata si
+   rifà da sola con i dati nuovi. Il servizio va ripescato dai dati nuovi:
+   quello che avevamo in mano era la versione vecchia. */
+document.addEventListener('rope-dati-nuovi', () => {
+  if(!pacchetto || !livello) return;
+  const t = ROPE.trovaLivello(pacchetto.id, livello.id);
+  if(!t) return;                 // il servizio non c'è più: si lascia com'è
+  pacchetto = t.pacchetto; livello = t.livello;
+  disegna();
+});
+
 
 function disegna(){
   const sel = ROPE.selezione();

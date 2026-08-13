@@ -135,6 +135,10 @@ function fineScheletro(elemento){
   elemento.style.width = '';
 }
 scheletri();
+/* Se il centro cambia un prezzo mentre stai guardando, la schermata si
+   rifà da sola con i dati nuovi. */
+document.addEventListener('rope-dati-nuovi', () => { location.reload(); });
+
 
 (async function(){
   let d;

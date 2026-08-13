@@ -125,6 +125,10 @@ function disegna(){
   disegna();
   aggiornaTotale();
 })();
+/* Se il centro cambia un prezzo mentre stai guardando, la schermata si
+   rifà da sola con i dati nuovi. */
+document.addEventListener('rope-dati-nuovi', () => { disegna(); aggiornaTotale(); });
+
 
 $("#avanti").addEventListener('click', () => {
   if(!scelti.length) return;
