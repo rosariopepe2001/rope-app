@@ -276,15 +276,20 @@ window.ROPE_ACCOUNT = (function(){
       await SL.initialize({google: {iOSClientId: idApp}});
     }catch(e){ return null; }
 
-    /* Il numero usa e getta lo proponiamo noi, ma quello che conta è
-       quello che finisce davvero dentro il gettone: lo rileggiamo da lì
-       e passiamo quello a Supabase. Così i due coincidono sempre,
-       qualunque cosa ci faccia Google. */
-    const nostroNonce = nonceCasuale();
+    /* Il numero usa e getta, esattamente come per Apple qui sopra:
+       a Google si manda la sua impronta (SHA-256), a Supabase il numero
+       in chiaro. Supabase rifà l'impronta e confronta.
+
+       Mandando lo stesso numero a tutti e due — che era quello che
+       facevo prima — Supabase risponde "Nonces mismatch": lui si aspetta
+       di trovare nel gettone l'impronta, non il numero. */
+    const nonceGrezzo = nonceCasuale();
+    const nonceCifrato = await inSha256(nonceGrezzo);
+
     let esito;
     try{
       esito = await SL.login({provider: "google",
-                              options: {scopes: ["email", "profile"], nonce: nostroNonce}});
+                              options: {scopes: ["email", "profile"], nonce: nonceCifrato}});
     }catch(e){
       const testo = String((e && (e.message || e.code)) || "");
       const annullato = /cancel|annull|closed|-5/i.test(testo);
@@ -294,9 +299,17 @@ window.ROPE_ACCOUNT = (function(){
     const gettone = esito && esito.result && esito.result.idToken;
     if(!gettone) throw new Error("Google non ha restituito l'accesso. Riprova.");
 
+    /* A Supabase va il numero in chiaro: è lui a rifarne l'impronta e a
+       confrontarla con quella scritta nel gettone.
+       Se però Google avesse messo nel gettone qualcosa di diverso
+       dall'impronta, si passa quello che c'è davvero: meglio entrare che
+       restare fuori per un dettaglio. */
     const corpo = {provider: "google", id_token: gettone};
-    const nonceVero = nonceDelGettone(gettone);
-    if(nonceVero) corpo.nonce = nonceVero;   // se il gettone non ne ha, non se ne manda
+    const nelGettone = nonceDelGettone(gettone);
+    if(!nelGettone)                      corpo.nonce = undefined;   // il gettone non ne ha
+    else if(nelGettone === nonceCifrato) corpo.nonce = nonceGrezzo;  // il caso normale
+    else                                 corpo.nonce = nelGettone;
+    if(!corpo.nonce) delete corpo.nonce;
 
     const o = await chiama("/auth/v1/token?grant_type=id_token", corpo);
     ricorda(o);
