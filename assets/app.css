@@ -37,9 +37,16 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:var(--body);
       premuto sui pulsanti — sui testi e sulle foto invece resta, così
       un indirizzo si può copiare e una foto si può salvare. */
 *{-webkit-tap-highlight-color:transparent}
-button,a,.chip,.carta,.mini,.lavoro,.tessera,nav.tab a{
+
+/* Niente selezione del testo con il doppio tocco.
+   Era questa la causa dei "saltelli": toccando due volte, iOS selezionava
+   la parola e spostava la pagina per far vedere le maniglie. In un'app
+   normale il testo non si seleziona; dove serve davvero — l'informativa
+   privacy, l'indirizzo, i campi da scrivere — si riaccende qui sotto. */
+body,button,a,.chip,.carta,.mini,.lavoro,.tessera,nav.tab a{
      -webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
-p,h1,h2,h3,h4,span,dd,li,input,textarea,img{-webkit-user-select:auto;user-select:auto}
+input,textarea,.selezionabile,.selezionabile *{
+     -webkit-user-select:auto;user-select:auto;-webkit-touch-callout:default}
 img{-webkit-touch-callout:default}
 
 button:active,a.btn:active,.chip:active,.mini:active,.lavoro:active,

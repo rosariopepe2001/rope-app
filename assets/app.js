@@ -97,16 +97,22 @@ window.ROPE = (function(){
      una foto — la schermata si rifà con i dati nuovi: chi sta guardando
      non deve vedere un prezzo vecchio. Se non è cambiato niente, non
      succede nulla e nessuno se ne accorge. */
-  function aggiornaInSottofondo(){
-    setTimeout(async () => {
-      try{
-        const nuovi = await scarica();
-        if(!nuovi || !sensati(nuovi)) return;
-        if(JSON.stringify(nuovi) === JSON.stringify(dati)) return;
-        dati = prepara(nuovi);
-        document.dispatchEvent(new CustomEvent('rope-dati-nuovi'));
-      }catch(e){ /* rete assente: si riprova alla schermata dopo */ }
-    }, 300);
+  async function controllaSeCambiato(){
+    try{
+      const nuovi = await scarica();
+      if(!nuovi || !sensati(nuovi)) return;
+      if(JSON.stringify(nuovi) === JSON.stringify(dati)) return;
+      dati = prepara(nuovi);
+      document.dispatchEvent(new CustomEvent('rope-dati-nuovi'));
+    }catch(e){ /* rete assente: si riprova al giro dopo */ }
+  }
+
+  function aggiornaInSottofondo(subito){
+    if(subito) setTimeout(controllaSeCambiato, 300);   // la copia poteva essere vecchia
+    /* e poi si continua a controllare finché la schermata resta aperta:
+       senza questo, cambiando un prezzo dal pannello, chi era già fermo
+       sulla pagina non vedeva niente fino al cambio di schermata */
+    tieniAggiornato(controllaSeCambiato, 20000);
   }
 
   async function carica(){
@@ -118,13 +124,35 @@ window.ROPE = (function(){
     const salvati = daMemoria();
     if(salvati){
       dati = prepara(salvati);
-      aggiornaInSottofondo();
+      aggiornaInSottofondo(true);     // la copia va ricontrollata subito
       return dati;
     }
 
+    /* Niente copia sul telefono: qui i dati arrivano freschi dalla rete,
+       quindi non serve ricontrollarli subito — ma il controllo periodico
+       deve partire lo stesso, o restando fermi su questa schermata non si
+       vedrebbe mai un cambio di prezzo. */
     dati = prepara(await scarica());
+    aggiornaInSottofondo(false);
     return dati;
   }
+
+  /* ---- il doppio tocco non deve fare niente ----
+     Anche con "touch-action: manipulation" iOS continua a interpretare il
+     secondo tocco ravvicinato come un comando suo, e sposta la pagina di
+     qualche pixel. Qui il secondo tocco entro un terzo di secondo viene
+     annullato — ma solo se non è finito su un pulsante o su un campo,
+     altrimenti si romperebbe chi tocca due volte di fretta. */
+  (function(){
+    let ultimo = 0;
+    document.addEventListener('touchend', e => {
+      const ora = Date.now();
+      const interattivo = e.target && e.target.closest &&
+        e.target.closest('button,a,input,textarea,select,label,[role="button"]');
+      if(ora - ultimo <= 350 && !interattivo) e.preventDefault();
+      ultimo = ora;
+    }, {passive: false});
+  })();
 
   /* ---- il colpetto sotto il dito ----
      Le app vere rispondono anche al tatto, non solo con gli occhi: un
