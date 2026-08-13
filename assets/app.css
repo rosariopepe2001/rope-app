@@ -15,38 +15,21 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:var(--body);
      font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;
      padding-bottom:calc(96px + env(safe-area-inset-bottom))}
 
-/* ---- il passaggio da una schermata all'altra ----
-   Ogni schermata di ROPE è una pagina a sé: senza questo si vedeva uno
-   sbattimento di nero, ed è la cosa che più faceva "sito web".
-   Ora la schermata nuova entra da destra e la vecchia sfuma, come nelle
-   app di sistema. Sui telefoni più vecchi non succede niente: si torna
-   al cambio secco di prima, senza rompere nulla. */
-@view-transition{navigation:auto}
-::view-transition-old(root){animation:esce .16s ease-in both}
-::view-transition-new(root){animation:entra .24s cubic-bezier(.2,.7,.3,1) both}
-@keyframes entra{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
-@keyframes esce{from{opacity:1}to{opacity:0}}
-@media (prefers-reduced-motion:reduce){
-  ::view-transition-old(root),::view-transition-new(root){animation:none}
-}
 
 /* ---- perché sembri un'app e non una pagina web aperta col browser ----
    1. niente riquadro grigio che lampeggia a ogni tocco;
    2. i pulsanti rispondono subito al dito, come nelle app di sistema;
-   3. niente lente d'ingrandimento e niente menù "Copia/Cerca" tenendo
-      premuto sui pulsanti — sui testi e sulle foto invece resta, così
-      un indirizzo si può copiare e una foto si può salvare. */
+   3. il testo non si seleziona e non si copia: tenendo premuto non esce
+      nessun menù, come in un'app vera. Fanno eccezione i campi in cui si
+      scrive e le foto, che devono restare salvabili. */
 *{-webkit-tap-highlight-color:transparent}
 
-/* Niente selezione del testo con il doppio tocco.
-   Era questa la causa dei "saltelli": toccando due volte, iOS selezionava
-   la parola e spostava la pagina per far vedere le maniglie. In un'app
-   normale il testo non si seleziona; dove serve davvero — l'informativa
-   privacy, l'indirizzo, i campi da scrivere — si riaccende qui sotto. */
-body,button,a,.chip,.carta,.mini,.lavoro,.tessera,nav.tab a{
-     -webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
-input,textarea,.selezionabile,.selezionabile *{
-     -webkit-user-select:auto;user-select:auto;-webkit-touch-callout:default}
+/* Era anche la causa dei "saltelli": toccando due volte, iOS selezionava
+   la parola e spostava la pagina per far spazio alle maniglie. */
+*{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+/* solo dove si scrive: lì la selezione serve per correggere */
+input,textarea{-webkit-user-select:auto;user-select:auto;-webkit-touch-callout:default}
+/* sulle foto resta il menù di sistema, altrimenti non si possono salvare */
 img{-webkit-touch-callout:default}
 
 button:active,a.btn:active,.chip:active,.mini:active,.lavoro:active,

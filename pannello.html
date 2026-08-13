@@ -594,9 +594,10 @@
         <input type="checkbox" id="v-attivo"><span class="binario" aria-hidden="true"></span>
       </label>
     </div>
+    <!-- "Fatto" per primo: l'Invio salva, non cancella -->
     <div class="azioni">
-      <button class="btn pericolo" value="elimina">Elimina</button>
-      <button class="btn primario" value="ok" id="v-conferma">Fatto</button>
+      <button class="btn primario" value="ok" id="v-conferma" style="order:2">Fatto</button>
+      <button class="btn pericolo" value="elimina" style="order:1">Elimina</button>
     </div>
   </form>
 </dialog>
@@ -630,9 +631,11 @@
         <input type="checkbox" id="p-attivo"><span class="binario" aria-hidden="true"></span>
       </label>
     </div>
+    <!-- "Fatto" sta per primo di proposito: cosi' battendo Invio dentro un
+         campo si salva, non si cancella. L'ordine visivo lo rimette a destra. -->
     <div class="azioni">
-      <button class="btn pericolo" value="elimina">Elimina</button>
-      <button class="btn primario" value="ok">Fatto</button>
+      <button class="btn primario" value="ok" style="order:2">Fatto</button>
+      <button class="btn pericolo" value="elimina" style="order:1">Elimina</button>
     </div>
   </form>
 </dialog>
@@ -660,9 +663,11 @@
         <input type="file" id="l-foto" accept="image/*" multiple aria-label="Foto del lavoro">
       </div>
     </div>
+    <!-- "Fatto" sta per primo di proposito: cosi' battendo Invio dentro un
+         campo si salva, non si cancella. L'ordine visivo lo rimette a destra. -->
     <div class="azioni">
-      <button class="btn pericolo" value="elimina">Elimina</button>
-      <button class="btn primario" value="ok">Fatto</button>
+      <button class="btn primario" value="ok" style="order:2">Fatto</button>
+      <button class="btn pericolo" value="elimina" style="order:1">Elimina</button>
     </div>
   </form>
 </dialog>
@@ -1303,7 +1308,7 @@ $("#dlg-voce").addEventListener('close', () => {
     if(confirm(`Eliminare "${nome}"? Non si può annullare.`)){
       const lista = tipo === 'livello' ? p.livelli : p.extra;
       const i = lista.indexOf(v); if(i > -1) lista.splice(i,1);
-      disegnaPacchetti(); segnaModificato();
+      disegnaPacchetti(); segnaModificato(); salvaTutto();
     }
   } else if(dlg.returnValue === 'ok'){
     v.nome = $("#v-nome").value.trim();
@@ -1320,7 +1325,7 @@ $("#dlg-voce").addEventListener('close', () => {
       const el = $("#pz-" + t.id);
       v.prezzi[t.id] = (!el || el.value === "") ? null : Number(el.value);
     });
-    disegnaPacchetti(); segnaModificato();
+    disegnaPacchetti(); segnaModificato(); salvaTutto();
   }
   voceCorrente = null; pacchettoDiVoce = null; tipoVoce = null;
 });
@@ -1343,14 +1348,14 @@ $("#dlg-pacchetto").addEventListener('close', () => {
   if(dlg.returnValue === 'elimina'){
     if(confirm(`Eliminare il pacchetto "${p.nome}" con tutti i suoi livelli ed extra?`)){
       dati.pacchetti = dati.pacchetti.filter(x => x !== p);
-      disegnaPacchetti(); segnaModificato();
+      disegnaPacchetti(); segnaModificato(); salvaTutto();
     }
   } else if(dlg.returnValue === 'ok'){
     p.nome = $("#p-nome").value.trim() || "Senza nome";
     p.sottotitolo = $("#p-sottotitolo").value.trim();
     p.nota = $("#p-nota").value.trim();
     p.attivo = $("#p-attivo").checked;
-    disegnaPacchetti(); segnaModificato();
+    disegnaPacchetti(); segnaModificato(); salvaTutto();
   }
   pacchettoCorrente = null;
 });
@@ -1500,13 +1505,13 @@ $("#dlg-lavoro").addEventListener('close', () => {
   if(dlg.returnValue === 'elimina'){
     if(confirm("Eliminare questo lavoro?")){
       dati.galleria = dati.galleria.filter(x => x !== l);
-      disegnaGalleria(); segnaModificato();
+      disegnaGalleria(); segnaModificato(); salvaTutto();
     }
   } else if(dlg.returnValue === 'ok'){
     l.auto = $("#l-auto").value.trim();
     l.servizio = $("#l-servizio").value.trim();
     l.nota = $("#l-nota").value.trim();
-    disegnaGalleria(); segnaModificato();
+    disegnaGalleria(); segnaModificato(); salvaTutto();
   }
   lavoroCorrente = null;
 });
@@ -1594,17 +1599,27 @@ $("#l-foto").addEventListener('change', async e => {
 });
 
 /* ---------- salvataggio ---------- */
-$("#salva").addEventListener('click', async () => {
-  const btn = $("#salva"); btn.disabled = true; btn.textContent = "Salvo…";
+/* Salva davvero, su Supabase. La usano sia il pulsante SALVA in basso
+   sia il "Fatto" delle finestre: prima "Fatto" cambiava le cose solo a
+   schermo, e chi non premeva anche SALVA perdeva tutto. */
+async function salvaTutto(){
+  const btn = $("#salva");
+  btn.disabled = true; btn.textContent = "Salvo…";
+  const s = $("#stato"); s.className = "stato"; s.textContent = "Salvo…";
   try{
     const r = await fetch('/api/dati', {method:'POST',
       headers:{'Content-Type':'application/json'}, body: JSON.stringify(dati)});
     const out = await r.json();
     if(!r.ok || out.errore) throw new Error(out.errore || 'errore');
     segnaSalvato("Salvato");
-  }catch(e){ segnaErrore("Non salvato: " + e.message); btn.disabled = false; }
+  }catch(e){
+    segnaErrore("Non salvato: " + e.message);
+    btn.disabled = false;
+  }
   btn.textContent = "Salva";
-});
+}
+
+$("#salva").addEventListener('click', salvaTutto);
 
 /* ---------- orari e disponibilità ---------- */
 function disp(){

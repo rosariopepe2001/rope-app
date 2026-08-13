@@ -13,16 +13,6 @@
     --body:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
     color-scheme:dark;
   }
-  /* il passaggio da una schermata all'altra (questa pagina ha un CSS
-     tutto suo, quindi la regola va ripetuta anche qui) */
-  @view-transition{navigation:auto}
-  ::view-transition-old(root){animation:esce .16s ease-in both}
-  ::view-transition-new(root){animation:entra .24s cubic-bezier(.2,.7,.3,1) both}
-  @keyframes entra{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
-  @keyframes esce{from{opacity:1}to{opacity:0}}
-  @media (prefers-reduced-motion:reduce){
-    ::view-transition-old(root),::view-transition-new(root){animation:none}
-  }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--text);font-family:var(--body);
        font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;
