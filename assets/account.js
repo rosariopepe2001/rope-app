@@ -29,6 +29,31 @@ window.ROPE_ACCOUNT = (function(){
     localStorage.setItem(MEMORIA, JSON.stringify(sessione));
   }
 
+  /* ---- come sei entrato l'ultima volta ----
+     Chi si registra con Google non ha una password: se poi prova a entrare
+     scrivendo email e password, Supabase dice solo "credenziali non
+     valide" e il cliente non capisce perché. Qui teniamo nota, su questo
+     telefono, di come ha fatto l'accesso ogni email, così glielo possiamo
+     dire con parole sue. Resta tutto sul telefono, non va da nessuna parte. */
+  const MEMORIA_PROVIDER = "rope-provider";
+
+  function elencoProvider(){
+    try{ return JSON.parse(localStorage.getItem(MEMORIA_PROVIDER)) || {}; }
+    catch(e){ return {}; }
+  }
+  function ricordaProvider(email, come){
+    const e = String(email || "").trim().toLowerCase();
+    if(!e) return;
+    try{
+      const tutti = elencoProvider();
+      tutti[e] = come;
+      localStorage.setItem(MEMORIA_PROVIDER, JSON.stringify(tutti));
+    }catch(x){}
+  }
+  function providerDi(email){
+    return elencoProvider()[String(email || "").trim().toLowerCase()] || "";
+  }
+
   function messaggioChiaro(o, stato){
     const m = String(o.error_description || o.msg || o.message || "");
     if(/already registered|already been registered/i.test(m))
@@ -82,6 +107,7 @@ window.ROPE_ACCOUNT = (function(){
       throw e;
     }
     ricorda(o);
+    ricordaProvider(sessione.email, "password");
     return sessione;
   }
 
@@ -91,6 +117,7 @@ window.ROPE_ACCOUNT = (function(){
       email: String(email || "").trim(), password: String(password || "")
     });
     ricorda(o);
+    ricordaProvider(sessione.email, "password");
     return sessione;
   }
 
@@ -166,6 +193,7 @@ window.ROPE_ACCOUNT = (function(){
       provider: 'apple', id_token: gettone, nonce: grezzo
     });
     ricorda(o);
+    ricordaProvider(sessione.email, "Apple");
 
     /* Apple manda nome e cognome solo la primissima volta: se ce li dà,
        li salviamo subito, altrimenti li chiederemo al primo appuntamento. */
@@ -242,6 +270,7 @@ window.ROPE_ACCOUNT = (function(){
     await aggiornaDaServer();
     // se il gettone non vale niente, la sessione è già stata buttata via
     if(!sessione) throw new Error("Google non ci ha fatto entrare. Riprova.");
+    ricordaProvider(sessione.email, "Google");
     return sessione;
   }
 
@@ -315,6 +344,7 @@ window.ROPE_ACCOUNT = (function(){
     ricorda(o);
     await aggiornaDaServer();
     if(!sessione) throw new Error("Google non ci ha fatto entrare. Riprova.");
+    ricordaProvider(sessione.email, "Google");
     return sessione;
   }
 
@@ -376,6 +406,14 @@ window.ROPE_ACCOUNT = (function(){
   function esci(){
     const t = sessione && sessione.access_token;
     ricorda(null);
+
+    /* Anche Google deve dimenticare l'account, altrimenti al rientro
+       riprende in automatico l'ultimo usato e non c'è modo di sceglierne
+       un altro: la finestra non chiede più niente. */
+    try{
+      const SL = moduli().SocialLogin;
+      if(SL && SL.logout) SL.logout({provider: "google"}).catch(() => {});
+    }catch(e){}
     /* chi entra dopo su questo telefono non deve trovarsi le auto e la
        prenotazione a metà di chi c'era prima */
     ["rope-selezione", "rope-conferma", "rope-auto"].forEach(k => localStorage.removeItem(k));
@@ -479,5 +517,5 @@ window.ROPE_ACCOUNT = (function(){
   return {registra, entra, esci, passwordDimenticata, token, dentro, chiSono,
           conAccount, aggiornaDati, eliminaAccount, serveAccesso,
           appleDisponibile, conApple,
-          googleDisponibile, conGoogle, raccogliRitornoGoogle};
+          googleDisponibile, conGoogle, raccogliRitornoGoogle, providerDi};
 })();

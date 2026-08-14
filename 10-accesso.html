@@ -197,11 +197,36 @@ $("#modulo").addEventListener('submit', async e => {
     location.replace(torna);
     return;
   }catch(ex){
-    messaggio(ex.message, ex.motivo === 'conferma' ? 'ok' : 'errore');
+    messaggio(spiegaMeglio(ex.message), ex.motivo === 'conferma' ? 'ok' : 'errore');
     if(ex.motivo === 'conferma') impostaModo('entra');
   }
   b.disabled = false; b.textContent = testoIniziale;
 });
+
+/* Chi si registra con Google (o Apple) non ha una password. Se poi prova
+   a entrare scrivendo email e password, Supabase risponde solo "credenziali
+   non valide" e il cliente resta lì a chiedersi perché. Se su questo
+   telefono sappiamo come aveva fatto l'accesso quella email, glielo
+   diciamo; se non lo sappiamo, glielo ricordiamo comunque come possibilità. */
+function spiegaMeglio(testo){
+  const sbagliate = /Email o password non corretti/i.test(testo);
+  const giaPresa  = /già un account con questa email/i.test(testo);
+  if(!sbagliate && !giaPresa) return testo;
+
+  const come = ROPE_ACCOUNT.providerDi($("#c-email").value);
+
+  if(come === 'Google' || come === 'Apple')
+    return "Questa email è registrata con " + come + ", non con una password. "
+         + "Tocca «" + (come === 'Google' ? 'Continua con Google' : 'Accedi con Apple')
+         + "» qui sotto.";
+
+  if(giaPresa)
+    return "C'è già un account con questa email. Se l'avevi creato con Google "
+         + "o con Apple, entra con quel pulsante qui sotto invece che con la password.";
+
+  return "Email o password non corretti. Se ti eri registrato con Google o con "
+       + "Apple, entra con quel pulsante qui sotto: in quel caso la password non ce l'hai.";
+}
 
 $("#dimenticata").addEventListener('click', async () => {
   const email = $("#c-email").value.trim();
