@@ -69,7 +69,7 @@
 </header>
 
 <main>
-  <h2 class="saluto">Ciao</h2>
+  <h2 class="saluto" id="saluto">Ciao</h2>
   <p>Il tuo prossimo appuntamento</p>
 
   <div id="promo"></div>
@@ -123,6 +123,14 @@ if(!ROPE_ACCOUNT.dentro() && !sessionStorage.getItem('rope-ospite')){
   location.replace('10-accesso.html?torna=01-home.html');
   throw new Error('accesso richiesto');
 }
+
+/* Il saluto col nome di chi è entrato: "Ciao Mario Rossi".
+   Per chi guarda senza account resta solo "Ciao". */
+(function(){
+  const io = ROPE_ACCOUNT.chiSono();
+  const nome = (io && io.nome || '').trim();
+  if(nome) $("#saluto").textContent = 'Ciao ' + nome;
+})();
 
 /* Riquadri vuoti che respirano finché i dati non arrivano: così si vede
    subito la forma della pagina, invece del nero e di scritte sbagliate. */

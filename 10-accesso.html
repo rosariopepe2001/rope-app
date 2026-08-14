@@ -135,7 +135,14 @@
 const $ = s => document.querySelector(s);
 let modo = 'entra';          // 'entra' oppure 'registra'
 
-const torna = new URLSearchParams(location.search).get('torna') || '01-home.html';
+const chiesto = new URLSearchParams(location.search).get('torna') || '01-home.html';
+
+/* Dopo l'accesso si apre la HOME, non la schermata da cui si arrivava:
+   entrando dal Profilo, ritrovarsi nel Profilo non aiuta nessuno.
+   Fanno eccezione i due passi finali della prenotazione: lì il cliente
+   stava già scegliendo, e riportarlo in home gli farebbe perdere il filo. */
+const FLUSSO_PRENOTAZIONE = ['05-la-tua-auto.html', '06-riepilogo.html'];
+const torna = FLUSSO_PRENOTAZIONE.indexOf(chiesto) > -1 ? chiesto : '01-home.html';
 
 /* Se stiamo tornando da Google, il gettone arriva dentro l'indirizzo:
    si raccoglie prima di ogni altra cosa. Poi, chi è già entrato non
