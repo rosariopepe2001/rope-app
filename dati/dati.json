@@ -1,7 +1,8 @@
 {
   "promo": {
     "testo": "Febbraio: ceramica -20%",
-    "attiva": false
+    "attiva": false,
+    "percentuale": 0
   },
   "taglie": [
     {

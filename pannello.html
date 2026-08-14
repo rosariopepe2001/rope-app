@@ -74,6 +74,21 @@
         background:var(--bg);border:1px solid var(--border)}
   .mini.senza{display:flex;align-items:center;justify-content:center;
         color:var(--danger);font-size:11px;text-align:center;line-height:1.2}
+  /* servizi in promozione: righe con la spunta */
+  .promo-riga{display:flex;align-items:center;gap:12px;background:var(--surface-2);
+        border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;
+        cursor:pointer}
+  .promo-riga:hover{border-color:var(--accent)}
+  .promo-riga .quadro{width:24px;height:24px;border-radius:7px;border:1px solid var(--border);
+        background:var(--bg);flex:0 0 auto;display:flex;align-items:center;justify-content:center;
+        font-size:15px;color:var(--bg)}
+  .promo-riga.scelto .quadro{background:var(--accent);border-color:var(--accent)}
+  .promo-riga .n{flex:1;font-size:15px}
+  .promo-riga .p{font-family:var(--headline);font-size:13px;color:var(--text-2);white-space:nowrap}
+  .promo-riga.scelto .p{color:var(--accent)}
+  .promo-pacchetto{font-size:12px;color:var(--text-2);margin:14px 0 8px;letter-spacing:.08em;
+        text-transform:uppercase}
+
   /* filtri a pillola (storico) */
   .scelte{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
   .scelte button{min-height:44px;padding:0 16px;border-radius:99px;border:1px solid var(--border);
@@ -453,6 +468,17 @@
     </div>
     <p class="nota" id="anteprima-sconto" style="margin-top:12px">
       Metti 0 per non applicare nessuno sconto.</p>
+
+    <label class="interruttore" for="f-promo-tutti" style="margin-top:20px">
+      <span>Su tutti i servizi
+        <small>Spegni per scegliere tu a quali applicarlo</small></span>
+      <input type="checkbox" id="f-promo-tutti"><span class="binario" aria-hidden="true"></span>
+    </label>
+
+    <div id="scelta-servizi" hidden>
+      <div class="gruppo">Servizi in promozione</div>
+      <div id="elenco-promo"></div>
+    </div>
   </section>
 </main>
 
@@ -1573,7 +1599,65 @@ function riempiInfo(){
   $("#f-whatsapp").value = a.whatsapp || "";   $("#f-orari").value = a.orari || "";
   $("#f-promo-attiva").checked = !!p.attiva;   $("#f-promo-testo").value = p.testo || "";
   $("#f-promo-sconto").value = p.percentuale || "";
+  $("#f-promo-tutti").checked = p.tutti !== false;   // le vecchie promozioni valevano su tutto
+  disegnaSceltaServizi();
   anteprimaSconto();
+}
+
+/* ---------- a quali servizi si applica lo sconto ----------
+   Con l'interruttore "Su tutti i servizi" acceso non si sceglie niente.
+   Spegnendolo compare l'elenco: si toccano quelli in promozione. */
+function chiaveVoce(pacchettoId, voceId){ return pacchettoId + "|" + voceId; }
+
+function disegnaSceltaServizi(){
+  const zona = $("#scelta-servizi"), c = $("#elenco-promo");
+  const p = dati.promo || (dati.promo = {});
+  const tutti = p.tutti !== false;
+  zona.hidden = tutti;
+  if(tutti) return;
+
+  const scelti = p.servizi || (p.servizi = []);
+  c.innerHTML = "";
+
+  (dati.pacchetti || []).forEach(pa => {
+    const voci = [...(pa.livelli || []), ...(pa.extra || [])];
+    if(!voci.length) return;
+
+    const titolo = document.createElement("div");
+    titolo.className = "promo-pacchetto";
+    titolo.textContent = pa.nome || "Pacchetto";
+    c.appendChild(titolo);
+
+    voci.forEach(v => {
+      const chiave = chiaveVoce(pa.id, v.id);
+      const dentro = scelti.indexOf(chiave) > -1;
+      const riga = document.createElement("div");
+      riga.className = "promo-riga" + (dentro ? " scelto" : "");
+      riga.setAttribute("role", "button");
+      riga.setAttribute("aria-pressed", dentro);
+
+      const n = Number($("#f-promo-sconto").value) || 0;
+      const prezzo = (v.prezzi || {})[(dati.taglie[0] || {}).id];
+      const dopo = (typeof prezzo === "number" && n)
+        ? "€" + prezzo + " → €" + Math.round(prezzo * (100 - n) / 100) : "";
+
+      riga.innerHTML = '<span class="quadro">' + (dentro ? "✓" : "") + '</span>' +
+                       '<span class="n">' + esc(v.titolo || v.nome) + '</span>' +
+                       '<span class="p">' + dopo + '</span>';
+      riga.addEventListener("click", () => {
+        const i = scelti.indexOf(chiave);
+        if(i > -1) scelti.splice(i, 1); else scelti.push(chiave);
+        disegnaSceltaServizi();
+        anteprimaSconto();
+        segnaModificato();
+        salvaTutto();
+      });
+      c.appendChild(riga);
+    });
+  });
+
+  if(!c.children.length)
+    c.innerHTML = '<p class="vuoto">Non ci sono servizi da scegliere.</p>';
 }
 
 /* Fa vedere subito l'effetto dello sconto sui prezzi veri, così non deve
@@ -1608,7 +1692,7 @@ function anteprimaSconto(){
     + "<br><small>Nell'app si vede il prezzo vecchio sbarrato e quello nuovo.</small>";
 }
 ["#f-indirizzo","#f-telefono","#f-whatsapp","#f-orari","#f-promo-attiva",
- "#f-promo-testo","#f-promo-sconto"]
+ "#f-promo-testo","#f-promo-sconto","#f-promo-tutti"]
   .forEach(sel => $(sel).addEventListener('input', () => {
     dati.azienda.indirizzo = $("#f-indirizzo").value;
     dati.azienda.telefono  = $("#f-telefono").value;
@@ -1617,6 +1701,8 @@ function anteprimaSconto(){
     dati.promo.attiva      = $("#f-promo-attiva").checked;
     dati.promo.testo       = $("#f-promo-testo").value;
     dati.promo.percentuale = Math.max(0, Math.min(90, Number($("#f-promo-sconto").value) || 0));
+    dati.promo.tutti       = $("#f-promo-tutti").checked;
+    disegnaSceltaServizi();
     anteprimaSconto();
     segnaModificato();
   }));

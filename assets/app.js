@@ -719,10 +719,33 @@ window.ROPE = (function(){
      i prezzi finché la promozione è accesa. Il calcolo sta solo qui: così
      ogni schermata, il totale e la prenotazione che finisce nel database
      usano per forza lo stesso numero. */
+  /* La percentuale impostata, se la promozione è accesa. Da sola non
+     basta: bisogna anche vedere se questo servizio è fra quelli scelti. */
   function sconto(){
     const p = (dati && dati.promo) || {};
     const n = Number(p.percentuale) || 0;
     return (p.attiva && n > 0 && n < 100) ? n : 0;
+  }
+
+  /* In che pacchetto sta questa voce: serve a riconoscerla, perché due
+     pacchetti diversi possono avere voci con lo stesso identificativo. */
+  function pacchettoDiVoce(voce){
+    if(!dati || !voce) return null;
+    return (dati.pacchetti || []).find(p =>
+      (p.livelli || []).indexOf(voce) > -1 || (p.extra || []).indexOf(voce) > -1) || null;
+  }
+
+  function chiaveVoce(pacchettoId, voceId){ return pacchettoId + '|' + voceId; }
+
+  /* Lo sconto vale su questo servizio? Lui sceglie dal pannello se
+     applicarlo a tutto oppure solo ad alcuni. */
+  function inPromozione(voce){
+    if(!sconto() || !voce) return false;
+    const p = dati.promo || {};
+    if(p.tutti !== false) return true;          // "su tutti", com'era prima
+    const pa = pacchettoDiVoce(voce);
+    if(!pa) return false;
+    return (p.servizi || []).indexOf(chiaveVoce(pa.id, voce.id)) > -1;
   }
 
   /* Il prezzo di listino, senza sconto. */
@@ -733,16 +756,17 @@ window.ROPE = (function(){
     return (p === null || p === undefined || p === "") ? null : p;
   }
 
-  /* Quanto paga davvero: all'euro, senza centesimi strani. */
-  function conSconto(prezzo){
-    const s = sconto();
-    if(!s || typeof prezzo !== 'number') return prezzo;
-    return Math.round(prezzo * (100 - s) / 100);
+  /* Quanto paga davvero per QUESTA voce: all'euro, senza centesimi strani.
+     Lo sconto si applica solo se il servizio è fra quelli in promozione. */
+  function conSconto(prezzo, voce){
+    if(typeof prezzo !== 'number') return prezzo;
+    if(!inPromozione(voce)) return prezzo;
+    return Math.round(prezzo * (100 - sconto()) / 100);
   }
 
-  /* Il prezzo che conta per i conti: già scontato. */
+  /* Il prezzo che conta per i conti: già scontato se è il caso. */
   function prezzoDi(voce, idTaglia){
-    return conSconto(prezzoPieno(voce, idTaglia));
+    return conSconto(prezzoPieno(voce, idTaglia), voce);
   }
 
   function testoPrezzo(voce, idTaglia){
@@ -757,7 +781,7 @@ window.ROPE = (function(){
     const pieno = prezzoPieno(voce, idTaglia);
     if(pieno === 'richiesta') return 'Su richiesta';
     if(pieno === null) return '—';
-    const scontato = conSconto(pieno);
+    const scontato = conSconto(pieno, voce);
     if(scontato === pieno) return '€' + pieno;
     return '<s class="prima">€' + pieno + '</s> €' + scontato;
   }
@@ -869,7 +893,7 @@ window.ROPE = (function(){
 
   return {carica, usaDati, esc, taglia, impostaTaglia, tagliaOggetto, selezione, salvaSelezione,
           aggiorna, azzera, chiudiPrenotazione, ultimaConfermata, trovaLivello,
-          sconto, prezzoPieno, conSconto, testoPrezzoDoppio, trovaExtra, prezzoDi, testoPrezzo, euro,
+          sconto, prezzoPieno, conSconto, testoPrezzoDoppio, inPromozione, trovaExtra, prezzoDi, testoPrezzo, euro,
           totale, disegnaChipsTaglia, testoSpiegaTaglia, disegnaAutoSalvate, tocco,
           storico, aggiungiAStorico, collegato, inviaPrenotazione, ancoraLibero,
           mieAuto, salvaAuto, eliminaAuto, chiaveAuto, autoValida, nomeAuto,
