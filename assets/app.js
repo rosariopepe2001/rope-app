@@ -865,14 +865,21 @@ window.ROPE = (function(){
           <span class="t">${esc(a.targa || a.colore || 'tocca per usarla')}</span>`;
         b.addEventListener('click', () => {
           tocco();
-          aggiorna({auto: {marca: a.marca || '', modello: a.modello || '',
-                           targa: a.targa || '', colore: a.colore || ''}});
-          if(a.taglia && dati && (dati.taglie || []).some(t => t.id === a.taglia)){
-            impostaTaglia(a.taglia);
-            aggiorna({taglia: a.taglia});
+          /* Toccandola di nuovo si toglie: prima, una volta scelta l'auto,
+             non c'era più modo di tornare indietro. */
+          const giaScelta = !!scelta && chiaveAuto(a) === scelta;
+          if(giaScelta){
+            aggiorna({auto: {}});
+          }else{
+            aggiorna({auto: {marca: a.marca || '', modello: a.modello || '',
+                             targa: a.targa || '', colore: a.colore || ''}});
+            if(a.taglia && dati && (dati.taglie || []).some(t => t.id === a.taglia)){
+              impostaTaglia(a.taglia);
+              aggiorna({taglia: a.taglia});
+            }
           }
           ridisegna();
-          if(alCambio) alCambio(a);
+          if(alCambio) alCambio(giaScelta ? null : a);
         });
         c.appendChild(b);
       });

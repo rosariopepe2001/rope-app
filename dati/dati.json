@@ -1,8 +1,16 @@
 {
   "promo": {
-    "testo": "Febbraio: ceramica -20%",
-    "attiva": false,
-    "percentuale": 0
+    "testo": "PROMO ESTIVA -20% DI SCONTO DAL 14 AGOSTO AL 24 AGOSTO",
+    "tutti": false,
+    "attiva": true,
+    "servizi": [
+      "p-interno|interno-base",
+      "p-interno|interno-premium",
+      "p-interno-esterno|completo-base",
+      "p-interno-esterno|completo-premium",
+      "p-esperienze|showroom"
+    ],
+    "percentuale": 20
   },
   "taglie": [
     {

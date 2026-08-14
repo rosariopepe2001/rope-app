@@ -61,7 +61,7 @@
   <div class="sezione">L'auto</div>
   <div id="zona-salvate" hidden>
     <p style="font-size:13px;color:var(--text-2);margin:0 0 10px">
-      Le tue auto — tocca quella che porti e i campi si riempiono da soli.</p>
+      Le tue auto — tocca quella che porti e i campi si riempiono da soli. Tocca di nuovo per toglierla.</p>
     <div class="salvate" id="salvate" role="group" aria-label="Le auto che hai già usato"></div>
   </div>
   <div class="due">
@@ -146,13 +146,21 @@ async function mostraAutoSalvate(){
     b.innerHTML = `<span class="m">${ROPE.esc(ROPE.nomeAuto(auto) || 'La mia auto')}</span>
       <span class="t">${ROPE.esc(auto.targa || auto.colore || 'tocca per usarla')}</span>`;
     b.addEventListener('click', () => {
-      $("#marca").value = auto.marca || ""; $("#modello").value = auto.modello || "";
-      $("#targa").value = auto.targa || ""; $("#colore").value = auto.colore || "";
-      if(auto.taglia && ROPE.dati && (ROPE.dati.taglie||[]).some(t => t.id === auto.taglia)){
-        ROPE.impostaTaglia(auto.taglia);
-        ROPE.aggiorna({taglia: auto.taglia});
-        if(ridisegnaTaglie) ridisegnaTaglie();
+      /* Toccandola di nuovo si toglie e i campi si svuotano: prima, scelta
+         un'auto, non si poteva più tornare indietro. */
+      const giaScelta = b.getAttribute('aria-pressed') === 'true';
+      if(giaScelta){
+        ["marca","modello","targa","colore"].forEach(id => $("#" + id).value = "");
+      }else{
+        $("#marca").value = auto.marca || ""; $("#modello").value = auto.modello || "";
+        $("#targa").value = auto.targa || ""; $("#colore").value = auto.colore || "";
+        if(auto.taglia && ROPE.dati && (ROPE.dati.taglie||[]).some(t => t.id === auto.taglia)){
+          ROPE.impostaTaglia(auto.taglia);
+          ROPE.aggiorna({taglia: auto.taglia});
+          if(ridisegnaTaglie) ridisegnaTaglie();
+        }
       }
+      ROPE.tocco();
       aggiornaTotale();
       segnaSceltaAuto();
     });
