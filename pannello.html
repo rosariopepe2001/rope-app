@@ -971,7 +971,7 @@ async function carica(){
     dati.pacchetti = dati.pacchetti || [];
     dati.galleria  = dati.galleria  || [];
     disegnaPacchetti(); disegnaTaglie(); disegnaGalleria(); riempiInfo();
-    disegnaOrari(); caricaPrenotazioni();
+    disegnaOrari(); caricaPrenotazioni(); caricaClienti();
     segnaSalvato("Nessuna modifica");
   }catch(e){
     segnaErrore("Non riesco a leggere i dati: " + (e.message || "controlla il collegamento"));
@@ -2303,15 +2303,44 @@ function nAggiornaTotale(){
    mai prenotato da lì non compare (non abbiamo altro modo di sapere il suo
    nome), e in quel caso si scrive a mano come sempre. */
 let nUtenteScelto = null;
+let clientiDelDatabase = [];
+
+/* L'elenco vero dei registrati, se sul database c'è la funzione
+   clienti_registrati (supabase/clienti-registrati.sql). Se non c'è, non è
+   un guasto: si va avanti con quelli ricavati dalle prenotazioni. */
+async function caricaClienti(){
+  try{
+    const r = await fetch('/api/clienti');
+    const o = await r.json();
+    clientiDelDatabase = Array.isArray(o.clienti) ? o.clienti : [];
+  }catch(e){ clientiDelDatabase = []; }
+}
 
 function nClientiRegistrati(){
   const visti = new Map();
-  (prenotazioniViste || []).forEach(v => {
-    if(!v.utente || visti.has(v.utente)) return;
-    visti.set(v.utente, {utente: v.utente,
-                         nome: (v.cliente_nome || '').trim() || 'Cliente',
-                         tel: (v.cliente_tel || '').trim()});
+
+  // 1. chi risulta registrato sul database, anche se non ha mai prenotato
+  clientiDelDatabase.forEach(c => {
+    if(!c || !c.id) return;
+    visti.set(c.id, {utente: c.id,
+                     nome: (c.nome || '').trim() || (c.email || 'Cliente'),
+                     tel: (c.telefono || '').trim()});
   });
+
+  // 2. chi ha già prenotato dall'app: il nome scritto sulla prenotazione
+  //    è quello con cui si è presentato, quindi vince
+  (prenotazioniViste || []).forEach(v => {
+    if(!v.utente) return;
+    const gia = visti.get(v.utente);
+    const nome = (v.cliente_nome || '').trim();
+    const tel = (v.cliente_tel || '').trim();
+    if(!gia) visti.set(v.utente, {utente: v.utente, nome: nome || 'Cliente', tel});
+    else {
+      if(nome) gia.nome = nome;
+      if(tel) gia.tel = tel;
+    }
+  });
+
   return [...visti.values()].sort((a, b) => a.nome.localeCompare(b.nome, 'it'));
 }
 
@@ -2474,6 +2503,9 @@ async function apriNuovaPrenotazione(iso, ora){
   $("#n-stato").value = 'confermata';
   $("#n-giorni").value = 1;
   nRiempiPacchetti(); nRiempiTaglie(); nRiempiLivelli();
+  // l'elenco si rilegge adesso: un cliente che si è registrato mentre il
+  // pannello era aperto altrimenti non comparirebbe fino al ricaricamento
+  await caricaClienti();
   nRiempiClienti(null);
   $("#n-data").value = iso || ROPE.dataISO(new Date());
   nAggiornaTotale();
@@ -2512,6 +2544,7 @@ async function apriModifica(v){
 
   if(v.taglia && dati.taglie.some(t => t.id === v.taglia)) $("#n-taglia").value = v.taglia;
   nRiempiExtra();
+  await caricaClienti();
   nRiempiClienti(v.utente || null);
   const scelti = (v.extra || []).map(e => e.id);
   document.querySelectorAll('#n-extra input').forEach(i => { i.checked = scelti.includes(i.value); });

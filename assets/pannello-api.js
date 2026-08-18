@@ -131,6 +131,14 @@ window.ROPE_ACCESSO = (function(){
       return risposta({ok: true});
     },
 
+    async clientiGET(){
+      if(!BASE || !PUB) return risposta({clienti: []});
+      const r = await rest("/rest/v1/rpc/clienti_registrati", {method: "POST", body: "{}"});
+      if(!r) return risposta({clienti: []});
+      if(!r.ok) return risposta({clienti: [], nota: await leggiErrore(r)});
+      return risposta({clienti: await r.json()});
+    },
+
     async prenotazioniGET(){
       if(!BASE || !PUB) return risposta({collegato: false, prenotazioni: []});
       /* Dalla più recente: così, anche quando saranno tante, quelle che
@@ -273,6 +281,8 @@ window.ROPE_ACCESSO = (function(){
         if(metodo === "DELETE") return AZIONI.prenotazioniDELETE(corpo);
         return AZIONI.prenotazioniGET();
       }
+
+      if(url.startsWith("/api/clienti")) return AZIONI.clientiGET();
 
       if(url.startsWith("/api/foto")) return AZIONI.fotoPOST(corpo);
 
