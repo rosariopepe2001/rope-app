@@ -24,6 +24,11 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:var(--body);
       scrive e le foto, che devono restare salvabili. */
 *{-webkit-tap-highlight-color:transparent}
 
+/* 4. niente barra di scorrimento a lato: le app di sistema non la mostrano,
+      la pagina si scorre e basta. Vale sia in verticale sia nei caroselli. */
+html,body,*{scrollbar-width:none;-ms-overflow-style:none}
+*::-webkit-scrollbar{width:0;height:0;display:none}
+
 /* Era anche la causa dei "saltelli": toccando due volte, iOS selezionava
    la parola e spostava la pagina per far spazio alle maniglie. */
 *{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}

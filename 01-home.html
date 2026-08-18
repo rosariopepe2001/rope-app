@@ -124,11 +124,11 @@ if(!ROPE_ACCOUNT.dentro() && !sessionStorage.getItem('rope-ospite')){
   throw new Error('accesso richiesto');
 }
 
-/* Il saluto col nome di chi è entrato: "Ciao Mario Rossi".
+/* Il saluto col solo nome di battesimo: "Ciao Mario", non "Ciao Mario Rossi".
    Per chi guarda senza account resta solo "Ciao". */
 (function(){
   const io = ROPE_ACCOUNT.chiSono();
-  const nome = (io && io.nome || '').trim();
+  const nome = (io && io.nome || '').trim().split(/\s+/)[0] || '';
   if(nome) $("#saluto").textContent = 'Ciao ' + nome;
 })();
 

@@ -2,7 +2,7 @@
   "promo": {
     "testo": "PROMO ESTIVA -20% DI SCONTO DAL 14 AGOSTO AL 24 AGOSTO",
     "tutti": false,
-    "attiva": true,
+    "attiva": false,
     "servizi": [
       "p-interno|interno-base",
       "p-interno|interno-premium",

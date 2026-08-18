@@ -741,10 +741,15 @@ window.ROPE = (function(){
      applicarlo a tutto oppure solo ad alcuni. */
   function inPromozione(voce){
     if(!sconto() || !voce) return false;
-    const p = dati.promo || {};
-    if(p.tutti !== false) return true;          // "su tutti", com'era prima
     const pa = pacchettoDiVoce(voce);
     if(!pa) return false;
+
+    /* Gli extra non vanno mai scontati: sono lavoretti aggiunti, il cui
+       margine è già stretto. Vale anche con la promozione "su tutti". */
+    if((pa.extra || []).indexOf(voce) > -1) return false;
+
+    const p = dati.promo || {};
+    if(p.tutti !== false) return true;          // tutti i servizi
     return (p.servizi || []).indexOf(chiaveVoce(pa.id, voce.id)) > -1;
   }
 

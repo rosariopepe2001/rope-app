@@ -471,7 +471,8 @@
 
     <label class="interruttore" for="f-promo-tutti" style="margin-top:20px">
       <span>Su tutti i servizi
-        <small>Spegni per scegliere tu a quali applicarlo</small></span>
+        <small>Spegni per scegliere tu a quali applicarlo.
+        Gli extra non vengono mai scontati.</small></span>
       <input type="checkbox" id="f-promo-tutti"><span class="binario" aria-hidden="true"></span>
     </label>
 
@@ -962,6 +963,7 @@ function schedaPrenotazione(v, appenaArrivata){
         <span class="corpo">
           <span class="nome">${esc(v.data_app || 'Data da definire')}${v.ora ? ' · ' + esc(v.ora) : ''}</span>
           <span class="meta">
+            ${v.codice ? '<span class="tag">' + esc(v.codice) + '</span>' : ''}
             ${(auto.marca || auto.modello) ? '<span class="tag">' + esc([auto.marca,auto.modello].filter(Boolean).join(' ')) + '</span>' : ''}
             ${auto.targa ? '<span class="tag">' + esc(auto.targa) + '</span>' : ''}
           </span>
@@ -1619,8 +1621,10 @@ function disegnaSceltaServizi(){
   const scelti = p.servizi || (p.servizi = []);
   c.innerHTML = "";
 
+  /* Solo i servizi: gli extra non si scontano mai, quindi non ha senso
+     nemmeno poterli spuntare qui. */
   (dati.pacchetti || []).forEach(pa => {
-    const voci = [...(pa.livelli || []), ...(pa.extra || [])];
+    const voci = [...(pa.livelli || [])];
     if(!voci.length) return;
 
     const titolo = document.createElement("div");
@@ -1686,7 +1690,7 @@ function anteprimaSconto(){
   }));
 
   c.innerHTML = (acceso
-      ? "Con lo sconto del " + n + "% i clienti pagano:"
+      ? "Con lo sconto del " + n + "% i clienti pagano (solo servizi, non gli extra):"
       : "Lo sconto è pronto ma <b>spento</b>: accendi l'interruttore qui sopra. Sarebbe:")
     + "<br>" + (esempi.join("<br>") || "nessun prezzo da mostrare")
     + "<br><small>Nell'app si vede il prezzo vecchio sbarrato e quello nuovo.</small>";

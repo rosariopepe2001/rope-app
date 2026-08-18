@@ -14,6 +14,9 @@
     color-scheme:dark;
   }
   *{box-sizing:border-box}
+  /* niente barra di scorrimento a lato, come nel resto dell'app (app.css) */
+  html,body,*{scrollbar-width:none;-ms-overflow-style:none}
+  *::-webkit-scrollbar{width:0;height:0;display:none}
   body{margin:0;background:var(--bg);color:var(--text);font-family:var(--body);
        font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;
        padding-bottom:calc(96px + env(safe-area-inset-bottom))}
