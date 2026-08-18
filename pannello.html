@@ -2324,21 +2324,27 @@ function nClientiRegistrati(){
     if(!c || !c.id) return;
     visti.set(c.id, {utente: c.id,
                      nome: (c.nome || '').trim() || (c.email || 'Cliente'),
-                     tel: (c.telefono || '').trim()});
+                     tel: (c.telefono || '').trim(),
+                     email: (c.email || '').trim()});
   });
 
-  // 2. chi ha già prenotato dall'app: il nome scritto sulla prenotazione
-  //    è quello con cui si è presentato, quindi vince
+  // 2. chi ha già prenotato dall'app.
+  //    Il nome dell'ACCOUNT vince sempre: quello scritto sulla prenotazione
+  //    è di chi si è presentato quella volta, e può essere un'altra persona
+  //    (uno prenota per la moglie, per un amico). Se prendesse il posto del
+  //    nome dell'account, il titolare non ritroverebbe più il suo cliente
+  //    nella tendina — è successo davvero.
   (prenotazioniViste || []).forEach(v => {
     if(!v.utente) return;
     const gia = visti.get(v.utente);
     const nome = (v.cliente_nome || '').trim();
     const tel = (v.cliente_tel || '').trim();
-    if(!gia) visti.set(v.utente, {utente: v.utente, nome: nome || 'Cliente', tel});
-    else {
-      if(nome) gia.nome = nome;
-      if(tel) gia.tel = tel;
+    if(!gia){
+      visti.set(v.utente, {utente: v.utente, nome: nome || 'Cliente', tel});
+      return;
     }
+    if(!gia.nome && nome) gia.nome = nome;    // solo se l'account non ce l'ha
+    if(!gia.tel && tel) gia.tel = tel;
   });
 
   return [...visti.values()].sort((a, b) => a.nome.localeCompare(b.nome, 'it'));
@@ -2364,7 +2370,8 @@ function nRiempiClienti(scelto){
   elenco.forEach(c => {
     const o = document.createElement('option');
     o.value = c.utente;
-    o.textContent = c.nome + (c.tel ? ' · ' + c.tel : '') + '  — ha l\'app';
+    o.textContent = c.nome + (c.tel ? ' · ' + c.tel : '')
+                  + (c.email ? ' · ' + c.email : '') + '  — ha l\'app';
     s.appendChild(o);
   });
 
