@@ -539,6 +539,10 @@
 
       <div class="gruppo">Cliente</div>
 
+      <label for="n-cliente">Chi è</label>
+      <select id="n-cliente"></select>
+      <p class="nota" id="n-cliente-nota" style="margin:8px 0 4px" hidden></p>
+
       <label for="n-nome">Nome e cognome</label>
       <input type="text" id="n-nome" placeholder="Mario Rossi" autocomplete="off">
 
@@ -2290,6 +2294,75 @@ function nAggiornaTotale(){
     ? '(prezzo non impostato: scrivilo tu)' : '(calcolato, puoi cambiarlo)';
 }
 
+/* ---------- a nome di un cliente registrato ----------
+   Se chi chiama ha già l'app, la prenotazione va legata al suo account:
+   solo così la rivede nell'app, riceve i promemoria e l'avviso quando la
+   confermi. Senza, resta una riga che vede solo il pannello.
+
+   L'elenco si ricava dalle prenotazioni già arrivate dall'app: chi non ha
+   mai prenotato da lì non compare (non abbiamo altro modo di sapere il suo
+   nome), e in quel caso si scrive a mano come sempre. */
+let nUtenteScelto = null;
+
+function nClientiRegistrati(){
+  const visti = new Map();
+  (prenotazioniViste || []).forEach(v => {
+    if(!v.utente || visti.has(v.utente)) return;
+    visti.set(v.utente, {utente: v.utente,
+                         nome: (v.cliente_nome || '').trim() || 'Cliente',
+                         tel: (v.cliente_tel || '').trim()});
+  });
+  return [...visti.values()].sort((a, b) => a.nome.localeCompare(b.nome, 'it'));
+}
+
+function nNotaCliente(){
+  const nota = $("#n-cliente-nota");
+  nota.hidden = !nUtenteScelto;
+  if(nUtenteScelto)
+    nota.textContent = 'La prenotazione finisce nel suo account: la vede nell\'app, '
+      + 'riceve i promemoria e l\'avviso sul telefono quando la confermi.';
+}
+
+function nRiempiClienti(scelto){
+  const s = $("#n-cliente");
+  s.innerHTML = '';
+  const nuovo = document.createElement('option');
+  nuovo.value = '';
+  nuovo.textContent = 'Cliente nuovo — scrivo io nome e telefono';
+  s.appendChild(nuovo);
+
+  const elenco = nClientiRegistrati();
+  elenco.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c.utente;
+    o.textContent = c.nome + (c.tel ? ' · ' + c.tel : '') + '  — ha l\'app';
+    s.appendChild(o);
+  });
+
+  // se sto correggendo una prenotazione di un cliente che non ha mai
+  // prenotato dall'app, il suo nome non è nell'elenco: lo aggiungo io
+  if(scelto && !elenco.some(c => c.utente === scelto)){
+    const o = document.createElement('option');
+    o.value = scelto;
+    o.textContent = ($("#n-nome").value || 'Questo cliente') + '  — ha l\'app';
+    s.appendChild(o);
+  }
+
+  s.value = scelto || '';
+  nUtenteScelto = s.value || null;
+  nNotaCliente();
+}
+
+$("#n-cliente").addEventListener('change', () => {
+  nUtenteScelto = $("#n-cliente").value || null;
+  const c = nClientiRegistrati().find(x => x.utente === nUtenteScelto);
+  if(c){
+    $("#n-nome").value = c.nome;
+    if(c.tel) $("#n-tel").value = c.tel;
+  }
+  nNotaCliente();
+});
+
 /* Riempie l'elenco delle ore, segnando quelle già occupate.
    Lui può prenotarle lo stesso: gli chiedo solo conferma. */
 async function nAggiornaOrari(){
@@ -2401,6 +2474,7 @@ async function apriNuovaPrenotazione(iso, ora){
   $("#n-stato").value = 'confermata';
   $("#n-giorni").value = 1;
   nRiempiPacchetti(); nRiempiTaglie(); nRiempiLivelli();
+  nRiempiClienti(null);
   $("#n-data").value = iso || ROPE.dataISO(new Date());
   nAggiornaTotale();
   dlgN.showModal();
@@ -2438,6 +2512,7 @@ async function apriModifica(v){
 
   if(v.taglia && dati.taglie.some(t => t.id === v.taglia)) $("#n-taglia").value = v.taglia;
   nRiempiExtra();
+  nRiempiClienti(v.utente || null);
   const scelti = (v.extra || []).map(e => e.id);
   document.querySelectorAll('#n-extra input').forEach(i => { i.checked = scelti.includes(i.value); });
 
@@ -2509,6 +2584,7 @@ async function nSalva(){
   try{
     const campi = {
         stato: $("#n-stato").value,
+        utente: nUtenteScelto || null,
         cliente_nome: nome,
         cliente_tel: $("#n-tel").value.trim() || null,
         pacchetto: p.nome,
