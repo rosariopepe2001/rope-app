@@ -37,6 +37,24 @@
              transition:color .2s,border-color .2s;white-space:nowrap}
   nav button[aria-selected="true"]{color:var(--text);border-bottom-color:var(--accent)}
 
+  /* ---- agenda ---- */
+  .ag-giorno{display:flex;align-items:center;gap:8px;margin-top:16px}
+  .ag-giorno input[type="date"]{flex:1;margin:0}
+  .ag-f{display:flex;align-items:flex-start;gap:12px;padding:14px;border-radius:14px;
+        border:1px solid var(--border);background:var(--surface);margin-bottom:8px}
+  .ag-f .ore{font-family:var(--headline);font-weight:600;font-size:14px;
+             white-space:nowrap;min-width:104px}
+  .ag-f .corpo{flex:1;min-width:0}
+  .ag-f .corpo b{display:block;font-size:15px}
+  .ag-f .corpo small{display:block;color:var(--text-2);font-size:13px;margin-top:2px;
+                     line-height:1.5}
+  .ag-libera{border-style:dashed;border-color:rgba(255,255,255,.18);background:transparent}
+  .ag-libera .ore{color:var(--text-2)}
+  .ag-libera .corpo b{color:var(--accent)}
+  .ag-pausa{opacity:.6}
+  .ag-chiuso{text-align:center;padding:26px 14px;color:var(--danger)}
+  .ag-f .btn{flex:0 0 auto}
+
   main{padding:20px;max-width:760px;margin:0 auto}
   h2{font-family:var(--headline);font-size:22px;font-weight:700;margin:0 0 4px}
   .sub{color:var(--text-2);font-size:14px;margin:0 0 20px}
@@ -260,6 +278,7 @@
 
 <nav role="tablist" aria-label="Sezioni">
   <button role="tab" id="tab-prenotazioni" aria-selected="true" aria-controls="p-prenotazioni">Prenotazioni</button>
+  <button role="tab" id="tab-agenda"    aria-selected="false" aria-controls="p-agenda">Agenda</button>
   <button role="tab" id="tab-storico"   aria-selected="false" aria-controls="p-storico">Storico</button>
   <button role="tab" id="tab-auto"      aria-selected="false" aria-controls="p-auto">Auto</button>
   <button role="tab" id="tab-pacchetti" aria-selected="false" aria-controls="p-pacchetti">Pacchetti</button>
@@ -279,6 +298,22 @@
     <button class="btn pieno" id="ricarica-pren" style="margin-top:8px">Aggiorna</button>
     <p class="sub" id="pren-aggiornato" style="text-align:center;margin:10px 0 0;font-size:12px"
        role="status" aria-live="polite">Si aggiorna da solo.</p>
+  </section>
+
+  <section id="p-agenda" role="tabpanel" aria-labelledby="tab-agenda" hidden>
+    <h2>Agenda</h2>
+    <p class="sub">La giornata a colpo d'occhio: cosa è occupato e cosa è libero.
+      Da qui prenoti nel buco giusto senza accavallare i lavori.</p>
+
+    <div class="ag-giorno">
+      <button class="btn piccolo" type="button" id="ag-prima" aria-label="Giorno prima">‹</button>
+      <input type="date" id="ag-data" aria-label="Giorno da guardare">
+      <button class="btn piccolo" type="button" id="ag-dopo" aria-label="Giorno dopo">›</button>
+      <button class="btn piccolo" type="button" id="ag-oggi">Oggi</button>
+    </div>
+
+    <p class="sub" id="ag-riassunto" role="status" aria-live="polite" style="margin:14px 0 0"></p>
+    <div id="ag-fasce" style="margin-top:14px"></div>
   </section>
 
   <section id="p-storico" role="tabpanel" aria-labelledby="tab-storico" hidden>
@@ -777,6 +812,151 @@ document.querySelectorAll('nav button').forEach(b => b.addEventListener('click',
   $("#" + b.getAttribute('aria-controls')).hidden = false;
 }));
 
+/* ---------- agenda ----------
+   La giornata vista come una striscia di fasce: prima i lavori già presi,
+   e in mezzo i buchi liberi. Serve al titolare per rispondere al telefono
+   ("quando posso venire?") senza aprire il modulo di prenotazione e senza
+   rischiare di accavallare due lavori. */
+
+const agMin = t => { const p = String(t || '').split(':'); return (+p[0] || 0) * 60 + (+p[1] || 0); };
+const agOra = m => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+const agQuanto = m => { const o = Math.floor(m / 60), r = m % 60;
+  return o ? (r ? o + ' h ' + r : o + ' h') : r + ' min'; };
+
+function agISO(d){ return ROPE.dataISO(d); }
+
+/* I lavori che occupano quel giorno: quelli del giorno stesso, più quelli
+   di più giornate cominciati prima e non ancora finiti. */
+function agLavoriDi(iso){
+  const giorno = new Date(iso + 'T00:00:00');
+  return (prenotazioniViste || []).filter(v => {
+    if(v.stato === 'annullata') return false;
+    if(!v.data_app) return false;
+    const quanti = Math.max(v.giorni_lavorazione || 0, v.giorni || 1, 1);
+    const inizio = new Date(v.data_app + 'T00:00:00');
+    const fine = new Date(inizio); fine.setDate(fine.getDate() + quanti - 1);
+    return giorno >= inizio && giorno <= fine;
+  }).sort((a, b) => String(a.ora || '').localeCompare(String(b.ora || '')));
+}
+
+function disegnaAgenda(){
+  const c = $("#ag-fasce"), riass = $("#ag-riassunto"), iso = $("#ag-data").value;
+  if(!c) return;
+  if(!iso){ c.innerHTML = ''; riass.textContent = ''; return; }
+
+  const data = new Date(iso + 'T00:00:00');
+  const disp = dati.disponibilita || {};
+  const g = ((disp.giorni || {})[String(data.getDay() === 0 ? 7 : data.getDay())]) || {};
+  const chiusuraStraordinaria = (disp.chiusure || []).includes(iso);
+  const lavori = agLavoriDi(iso);
+
+  if(!g.aperto || chiusuraStraordinaria){
+    riass.textContent = '';
+    c.innerHTML = `<div class="pacchetto ag-chiuso"><b>Chiuso</b>
+      <div style="color:var(--text-2);font-size:13px;margin-top:6px">${
+        chiusuraStraordinaria ? 'Chiusura straordinaria messa da te negli Orari.'
+                              : 'Questo giorno della settimana è segnato chiuso.'}</div>
+      ${lavori.length ? '<div style="color:var(--text-2);font-size:13px;margin-top:10px">'
+        + 'Attenzione: ci sono comunque ' + lavori.length + ' lavori segnati.</div>' : ''}</div>`;
+    return;
+  }
+
+  const apre = agMin(g.da), chiude = agMin(g.a);
+  const pausa = (disp.pausa && disp.pausa.attiva)
+    ? {da: agMin(disp.pausa.da), a: agMin(disp.pausa.a)} : null;
+
+  /* Un lavoro senza ora, o di più giornate, si prende tutta la giornata. */
+  const blocchi = [];
+  let tuttoIlGiorno = null;
+  lavori.forEach(v => {
+    const quanti = Math.max(v.giorni_lavorazione || 0, v.giorni || 1, 1);
+    if(!v.ora || quanti > 1){ tuttoIlGiorno = v; return; }
+    const da = agMin(v.ora);
+    let a = da + (v.durata_minuti || 120);
+    if(pausa && da < pausa.a && a > pausa.da) a += (pausa.a - pausa.da);
+    blocchi.push({da, a: Math.min(a, chiude), v});
+  });
+  blocchi.sort((x, y) => x.da - y.da);
+
+  const righe = [];
+  const scheda = (classe, ore, titolo, sotto, bottone) => righe.push(
+    `<div class="ag-f ${classe}"><span class="ore">${esc(ore)}</span>
+       <span class="corpo"><b>${esc(titolo)}</b>${sotto ? '<small>' + sotto + '</small>' : ''}</span>
+       ${bottone || ''}</div>`);
+
+  if(tuttoIlGiorno){
+    const v = tuttoIlGiorno;
+    scheda('', agOra(apre) + ' – ' + agOra(chiude),
+           (v.cliente_nome || 'Cliente') + ' — giornata intera',
+           esc(v.servizio || v.pacchetto || '') + (v.auto && (v.auto.marca || v.auto.modello)
+             ? ' · ' + esc([v.auto.marca, v.auto.modello].filter(Boolean).join(' ')) : ''));
+    riass.textContent = 'Giornata occupata per intero.';
+    c.innerHTML = righe.join('');
+    return;
+  }
+
+  let cursore = apre, liberi = 0, primoLibero = null;
+  const vuoto = (da, a) => {
+    if(a - da < 15) return;                    // buchi da niente non si scrivono
+    liberi += (a - da);
+    if(primoLibero === null) primoLibero = da;
+    scheda('ag-libera', agOra(da) + ' – ' + agOra(a), 'Libero',
+           agQuanto(a - da) + ' a disposizione',
+           `<button class="btn piccolo" type="button" data-ag-ora="${agOra(da)}">Prenota qui</button>`);
+  };
+
+  blocchi.forEach(b => {
+    if(pausa && cursore < pausa.da && b.da >= pausa.a){
+      vuoto(cursore, pausa.da);
+      scheda('ag-pausa', agOra(pausa.da) + ' – ' + agOra(pausa.a), 'Pausa', '');
+      cursore = pausa.a;
+    }
+    if(b.da > cursore) vuoto(cursore, b.da);
+    const auto = b.v.auto || {};
+    const pezzi = [];
+    if(auto.marca || auto.modello) pezzi.push(esc([auto.marca, auto.modello].filter(Boolean).join(' ')));
+    if(auto.targa) pezzi.push(esc(auto.targa));
+    if(b.v.taglia) pezzi.push('taglia ' + esc(String(b.v.taglia).toUpperCase()));
+    scheda('', agOra(b.da) + ' – ' + agOra(b.a),
+           (b.v.cliente_nome || 'Cliente'),
+           esc(b.v.servizio || b.v.pacchetto || '') + (pezzi.length ? '<br>' + pezzi.join(' · ') : ''));
+    cursore = Math.max(cursore, b.a);
+  });
+
+  if(pausa && cursore < pausa.da){
+    vuoto(cursore, pausa.da);
+    scheda('ag-pausa', agOra(pausa.da) + ' – ' + agOra(pausa.a), 'Pausa', '');
+    cursore = pausa.a;
+  }
+  if(cursore < chiude) vuoto(cursore, chiude);
+
+  c.innerHTML = righe.join('');
+  c.querySelectorAll('[data-ag-ora]').forEach(b => b.addEventListener('click',
+    () => apriNuovaPrenotazione(iso, b.dataset.agOra)));
+
+  const quanti = blocchi.length;
+  riass.textContent = quanti
+    ? `${quanti} ${quanti === 1 ? 'lavoro' : 'lavori'} · ${agQuanto(liberi)} ancora liberi`
+      + (primoLibero !== null ? ` · primo buco alle ${agOra(primoLibero)}` : ' · giornata piena')
+    : `Giornata tutta libera: ${agQuanto(liberi)} disponibili.`;
+}
+
+function agVai(giorni){
+  const d = new Date(($("#ag-data").value || agISO(new Date())) + 'T00:00:00');
+  d.setDate(d.getDate() + giorni);
+  $("#ag-data").value = agISO(d);
+  disegnaAgenda();
+}
+
+$("#ag-data").addEventListener('change', disegnaAgenda);
+$("#ag-prima").addEventListener('click', () => agVai(-1));
+$("#ag-dopo").addEventListener('click', () => agVai(1));
+$("#ag-oggi").addEventListener('click', () => { $("#ag-data").value = agISO(new Date()); disegnaAgenda(); });
+$("#tab-agenda").addEventListener('click', () => {
+  if(!$("#ag-data").value) $("#ag-data").value = agISO(new Date());
+  disegnaAgenda();
+});
+
 /* ---------- caricamento ---------- */
 async function carica(){
   try{
@@ -896,6 +1076,7 @@ async function caricaPrenotazioni(silenzioso){
 
   const p = out.prenotazioni || [];
   prenotazioniViste = p;
+  if(!$("#p-agenda").hidden) disegnaAgenda();
   disegnaStorico();                    // storico e auto leggono le stesse righe
   disegnaAuto();
   segnaOraAggiornamento();
@@ -2210,7 +2391,7 @@ function nPronta(){
   return true;
 }
 
-$("#nuova-pren").addEventListener('click', async () => {
+async function apriNuovaPrenotazione(iso, ora){
   if(!nPronta()) return;
   nInModifica = null;
   $("#dlg-nuova-titolo").textContent = "Prenotazione a mano";
@@ -2220,11 +2401,17 @@ $("#nuova-pren").addEventListener('click', async () => {
   $("#n-stato").value = 'confermata';
   $("#n-giorni").value = 1;
   nRiempiPacchetti(); nRiempiTaglie(); nRiempiLivelli();
-  $("#n-data").value = ROPE.dataISO(new Date());
+  $("#n-data").value = iso || ROPE.dataISO(new Date());
   nAggiornaTotale();
   dlgN.showModal();
   await nAggiornaOrari();
-});
+  // arrivando da un buco dell'agenda, l'ora è già quella giusta
+  if(ora){
+    const sel = $("#n-ora");
+    if([...sel.options].some(o => o.value === ora)) sel.value = ora;
+  }
+}
+$("#nuova-pren").addEventListener('click', () => apriNuovaPrenotazione());
 
 /* Riapre la stessa finestra già compilata, per correggere una prenotazione
    (sia scritta a mano da lui, sia arrivata dall'app). */
