@@ -1,1 +1,17 @@
 .DS_Store
+
+# Chiavi e segreti — NON devono mai finire su GitHub (questo repo e' pubblico)
+dati/segreti.json
+segreti.json
+*.env
+.env
+.env.*
+
+# Copie di sicurezza dei dati e vecchie versioni del pannello
+dati/dati-backup-*.json
+*.prima-*
+
+# Roba di lavoro del Mac e degli strumenti
+__pycache__/
+.claude-flow/
+.impeccable/
