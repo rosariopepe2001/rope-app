@@ -69,6 +69,27 @@
                    border-left:2px solid var(--border);padding-left:12px;line-height:1.45}
   /* prenotazione arrivata mentre guardavi: si fa notare, senza rumore */
   .pacchetto.appena-arrivata{border-color:var(--accent);animation:comparsa .6s ease}
+
+  /* Prenotazione ferma da troppo: deve saltare all'occhio anche di sfuggita */
+  .pacchetto.in-ritardo{border-color:#e5a13a;box-shadow:0 0 0 1px #e5a13a55,0 0 22px #e5a13a22}
+  .pacchetto.in-ritardo .stato{background:#e5a13a22;color:#e5a13a}
+  #sollecito{position:sticky;top:0;z-index:40;display:none;gap:12px;align-items:center;
+    margin:0 0 14px;padding:14px 16px;border-radius:14px;
+    background:linear-gradient(180deg,#3a2a12,#241a0c);border:1px solid #e5a13a;
+    box-shadow:0 8px 26px #0009;animation:battito 2.2s ease-in-out infinite}
+  #sollecito.acceso{display:flex}
+  #sollecito .campanella{font-size:22px;line-height:1}
+  #sollecito .testo{flex:1;min-width:0}
+  #sollecito .testo b{display:block;font-family:var(--headline);font-size:15px;color:#ffd79a}
+  #sollecito .testo span{font-size:13px;color:#e8cfa8}
+  #sollecito button{flex:0 0 auto;min-height:44px;padding:0 16px;border-radius:999px;
+    border:0;background:#e5a13a;color:#1a1206;font-weight:700;cursor:pointer}
+  @keyframes battito{0%,100%{box-shadow:0 8px 26px #0009,0 0 0 0 #e5a13a33}
+                     50%{box-shadow:0 8px 26px #0009,0 0 0 10px #e5a13a00}}
+  @media (prefers-reduced-motion:reduce){
+    #sollecito{animation:none}
+    .pacchetto.in-ritardo{box-shadow:0 0 0 1px #e5a13a55}
+  }
   @keyframes comparsa{from{opacity:.4;transform:translateY(-4px)}to{opacity:1;transform:none}}
   @media (prefers-reduced-motion:reduce){.pacchetto.appena-arrivata{animation:none}}
   .gruppo{font-family:var(--headline);font-size:11px;letter-spacing:.18em;
@@ -293,6 +314,13 @@
   <section id="p-prenotazioni" role="tabpanel" aria-labelledby="tab-prenotazioni">
     <h2>Prenotazioni</h2>
     <p class="sub">Le richieste che arrivano dall'app.</p>
+    <div id="sollecito" role="alert" aria-live="assertive">
+      <span class="campanella" aria-hidden="true">🔔</span>
+      <span class="testo"><b id="sollecito-titolo">Prenotazione da confermare</b>
+        <span id="sollecito-dettaglio"></span></span>
+      <button type="button" id="sollecito-vai">Vedi</button>
+    </div>
+
     <button class="btn primario pieno" id="nuova-pren">+ Prenotazione a mano</button>
     <div id="lista-prenotazioni" style="margin-top:18px"><p class="vuoto">Carico…</p></div>
     <button class="btn pieno" id="ricarica-pren" style="margin-top:8px">Aggiorna</button>
@@ -1121,6 +1149,8 @@ async function caricaPrenotazioni(silenzioso){
   }
 
   future.forEach(v => c.appendChild(schedaPrenotazione(v, appenaArrivate.has(v.id))));
+  ultimePrenotazioni = p;
+  aggiornaSollecito(p);
 
   const nota = document.createElement('p');
   nota.className = 'vuoto';
@@ -1129,6 +1159,106 @@ async function caricaPrenotazioni(silenzioso){
   c.appendChild(nota);
 }
 
+
+/* ------------------------------------------------------------------
+   Sollecito: una prenotazione arrivata e mai confermata non deve
+   restare li' in silenzio. Dopo MINUTI_SOLLECITO minuti dal momento in
+   cui e' arrivata (creata_il del database), il pannello:
+     - mostra una fascia arancione fissa in cima
+     - accende il bordo della scheda
+     - scrive il numero nel titolo della scheda del browser, cosi' lo
+       vedi anche se stai su un'altra finestra
+     - fa un suono breve, una sola volta per prenotazione
+   ------------------------------------------------------------------ */
+const MINUTI_SOLLECITO = 10;
+let ultimePrenotazioni = null;
+
+/* Il ritardo cresce col tempo, non coi dati: senza questo controllo la
+   fascia comparirebbe solo al prossimo cambiamento delle prenotazioni. */
+setInterval(() => {
+  if(!ultimePrenotazioni) return;
+  aggiornaSollecito(ultimePrenotazioni);
+  ultimePrenotazioni.forEach(v => {
+    const scheda = document.querySelector(`.pacchetto[data-pren="${v.id}"]`);
+    if(scheda) scheda.classList.toggle('in-ritardo', inRitardo(v));
+  });
+}, 30000);
+let giaSuonate = new Set();
+let titoloOriginale = document.title;
+
+function inRitardo(v){
+  if((v.stato || 'nuova') !== 'nuova') return false;
+  if(!v.creata_il) return false;
+  const arrivo = new Date(v.creata_il).getTime();
+  if(!arrivo) return false;
+  return (Date.now() - arrivo) > MINUTI_SOLLECITO * 60000;
+}
+
+function daQuanto(v){
+  const min = Math.floor((Date.now() - new Date(v.creata_il).getTime()) / 60000);
+  if(min < 60) return `da ${min} minuti`;
+  const ore = Math.floor(min / 60);
+  if(ore < 24) return ore === 1 ? 'da un\'ora' : `da ${ore} ore`;
+  const gg = Math.floor(ore / 24);
+  return gg === 1 ? 'da ieri' : `da ${gg} giorni`;
+}
+
+/* Un "din" discreto, generato al volo: nessun file audio da caricare. */
+function suonaSollecito(){
+  try{
+    const ac = new (window.AudioContext || window.webkitAudioContext)();
+    [880, 1170].forEach((f, i) => {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type = 'sine'; o.frequency.value = f;
+      o.connect(g); g.connect(ac.destination);
+      const t = ac.currentTime + i * 0.16;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.16, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.45);
+      o.start(t); o.stop(t + 0.5);
+    });
+  }catch(e){ /* se il browser non vuole suonare, pazienza: resta il banner */ }
+}
+
+function aggiornaSollecito(elenco){
+  const tardive = (elenco || []).filter(inRitardo);
+  const banner = document.getElementById('sollecito');
+  if(!banner) return;
+
+  if(!tardive.length){
+    banner.classList.remove('acceso');
+    document.title = titoloOriginale;
+    return;
+  }
+
+  const prima = tardive.sort((a,b) =>
+    new Date(a.creata_il) - new Date(b.creata_il))[0];
+
+  document.getElementById('sollecito-titolo').textContent =
+    tardive.length === 1 ? 'Una prenotazione aspetta la tua conferma'
+                         : `${tardive.length} prenotazioni aspettano la tua conferma`;
+  document.getElementById('sollecito-dettaglio').textContent =
+    `${prima.cliente_nome || 'Cliente'} — ${prima.servizio || 'servizio'}, in attesa ${daQuanto(prima)}.`;
+  banner.classList.add('acceso');
+
+  /* Il titolo della scheda: si vede anche a pannello in secondo piano */
+  document.title = `(${tardive.length}) Da confermare — ${titoloOriginale}`;
+
+  /* Suono una volta sola per prenotazione */
+  tardive.forEach(v => {
+    if(!giaSuonate.has(v.id)){ giaSuonate.add(v.id); suonaSollecito(); }
+  });
+}
+
+document.getElementById('sollecito-vai')?.addEventListener('click', () => {
+  const primo = document.querySelector('.pacchetto.in-ritardo');
+  if(primo){
+    primo.scrollIntoView({behavior:'smooth', block:'center'});
+    primo.animate([{transform:'scale(1)'},{transform:'scale(1.02)'},{transform:'scale(1)'}],
+                  {duration:520, easing:'ease-out'});
+  }
+});
+
 /* La scheda di una prenotazione, con i pulsanti per aggiornarla.
    La usano sia "Prenotazioni" sia "Storico". */
 function schedaPrenotazione(v, appenaArrivata){
@@ -1136,7 +1266,9 @@ function schedaPrenotazione(v, appenaArrivata){
     const auto = v.auto || {};
     const extra = (v.extra||[]).map(e => e.nome).filter(Boolean);
     const box = document.createElement('div');
-    box.className = 'pacchetto' + (appenaArrivata ? ' appena-arrivata' : '');
+    box.className = 'pacchetto' + (appenaArrivata ? ' appena-arrivata' : '')
+                                + (inRitardo(v) ? ' in-ritardo' : '');
+    box.dataset.pren = v.id;
     box.innerHTML = `
       <div class="cima">
         <div><h3>${esc(v.cliente_nome || 'Cliente')}${
