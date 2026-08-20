@@ -435,7 +435,10 @@
       <h3>Quanto dura ogni servizio</h3>
       <p style="color:var(--text-2);font-size:14px;margin:8px 0 0">
         Serve per non farti prenotare due lavori sovrapposti.
-        Senza durata l'app calcola 2 ore.</p>
+        Senza durata, un trattamento conta 2 ore.<br>
+        Gli <b>extra</b> (col +) si sommano al trattamento scelto: se lasci
+        vuoto non allungano nulla, tranne quando il cliente prenota solo
+        extra, dove contano 30 minuti a testa.</p>
       <div id="lista-durate" style="margin-top:8px"></div>
     </div>
   </section>
@@ -2244,6 +2247,30 @@ function disegnaDurate(){
       unita.addEventListener('change', () => {
         numero.step = unita.value === 'giorni' ? 1 : 15;
         applica();
+      });
+      r.appendChild(box);
+      c.appendChild(r);
+    });
+
+    /* Gli extra hanno un tempo loro: senza, l'app ripiega su 30 minuti fissi
+       per tutti e il calendario propone slot che non stanno in piedi. */
+    (p.extra||[]).forEach(x => {
+      const r = document.createElement('div');
+      r.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)';
+      r.innerHTML = `<span style="flex:1;min-width:0;font-size:15px">+ ${esc(x.nome || 'Extra')}
+          <small style="display:block;color:var(--text-2);font-size:12px">${esc(p.nome)} · extra</small></span>`;
+      const box = document.createElement('div');
+      box.style.cssText = 'flex:0 0 200px;display:flex;align-items:center;gap:6px';
+      box.innerHTML = `
+        <input type="number" min="0" step="15" inputmode="numeric"
+          value="${x.durataMinuti || ''}" placeholder="30"
+          aria-label="Durata di ${esc(x.nome||'extra')}" style="min-height:44px">
+        <span style="flex:1;color:var(--text-2);font-size:13px">min</span>`;
+      const numero = box.querySelector('input');
+      numero.addEventListener('input', () => {
+        const v = numero.value === "" ? 0 : Number(numero.value);
+        x.durataMinuti = v > 0 ? v : 0;
+        segnaModificato();
       });
       r.appendChild(box);
       c.appendChild(r);
