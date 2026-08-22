@@ -51,6 +51,30 @@
   },
   "galleria": [
     {
+      "id": "g1787343938550",
+      "auto": "Audi A3",
+      "foto": [
+        "https://pwewrieenkrujfehjcxs.supabase.co/storage/v1/object/public/foto/1787343974753-IMG_2595-3.png",
+        "https://pwewrieenkrujfehjcxs.supabase.co/storage/v1/object/public/foto/1787343984150-IMG_2595-2.png",
+        "https://pwewrieenkrujfehjcxs.supabase.co/storage/v1/object/public/foto/1787343993387-IMG_2595.png"
+      ],
+      "nota": "",
+      "servizio": "Detailing Interno Premium"
+    },
+    {
+      "id": "g1787411133584",
+      "auto": "Fiat Punto 188 Sporting",
+      "foto": [
+        "https://pwewrieenkrujfehjcxs.supabase.co/storage/v1/object/public/foto/1787411211110-IMG_2595-8.png",
+        "https://pwewrieenkrujfehjcxs.supabase.co/storage/v1/object/public/foto/1787411202436-IMG_2595-7.png",
+        "https://pwewrieenkrujfehjcxs.supabase.co/storage/v1/object/public/foto/1787411178176-IMG_2595-5.png",
+        "https://pwewrieenkrujfehjcxs.supabase.co/storage/v1/object/public/foto/1787411166146-IMG_2595-4.png",
+        "https://pwewrieenkrujfehjcxs.supabase.co/storage/v1/object/public/foto/1787411190212-IMG_2595-6.png"
+      ],
+      "nota": "Definizione e Gloss",
+      "servizio": "Detailing Esterno"
+    },
+    {
       "id": "g1786556036332",
       "auto": "Fiat Punto 188 Sporting",
       "foto": [
@@ -78,7 +102,8 @@
             "m": 20,
             "s": 10,
             "xl": 40
-          }
+          },
+          "durataMinuti": 120
         },
         {
           "id": "x-sedili-tessuto",
@@ -89,7 +114,9 @@
             "m": 40,
             "s": 30,
             "xl": 60
-          }
+          },
+          "durataGiorni": 1,
+          "durataMinuti": 300
         },
         {
           "id": "x-cielo",
@@ -100,7 +127,8 @@
             "m": 20,
             "s": 10,
             "xl": 40
-          }
+          },
+          "durataMinuti": 180
         },
         {
           "id": "x-peli",
@@ -111,7 +139,9 @@
             "m": 30,
             "s": 20,
             "xl": 50
-          }
+          },
+          "durataGiorni": 1,
+          "durataMinuti": 120
         }
       ],
       "attivo": true,
@@ -132,7 +162,8 @@
           "descrizione": "Un trattamento completo pensato per rinfrescare e valorizzare l’abitacolo della tua auto.\n\nIl servizio comprende l’aspirazione approfondita degli interni e del bagagliaio, insieme alla pulizia delle principali superfici accessibili, per eliminare polvere e sporco e restituire all’ambiente un aspetto ordinato e curato.\n\nLa soluzione ideale per chi desidera interni puliti e impeccabili, con un servizio rapido ed efficace.",
           "suRichiesta": false,
           "durataGiorni": 1,
-          "durataMinuti": 120
+          "durataMinuti": 180,
+          "durataDaValutare": false
         },
         {
           "id": "interno-premium",
@@ -150,7 +181,8 @@
           "descrizione": "Un trattamento completo dedicato alla cura approfondita dell’abitacolo.\n\nOgni zona viene pulita con particolare attenzione, intervenendo anche negli spazi più nascosti e difficili da raggiungere, per ottenere un risultato preciso e curato in ogni dettaglio.\n\nIl servizio comprende inoltre l’applicazione di un protettivo specifico su plastiche e cruscotto, studiato per contrastare gli effetti dei raggi UV e preservare le superfici nel tempo, lasciando una piacevole finitura satinata e un aspetto rinnovato.",
           "suRichiesta": false,
           "durataGiorni": 1,
-          "durataMinuti": 180
+          "durataMinuti": 240,
+          "durataDaValutare": false
         }
       ],
       "sottotitolo": "La cura dell’abitacolo"
@@ -170,7 +202,8 @@
             "m": 45,
             "s": 40,
             "xl": 55
-          }
+          },
+          "durataMinuti": 300
         },
         {
           "id": "x-fari",
@@ -181,7 +214,8 @@
             "m": 120,
             "s": 120,
             "xl": 120
-          }
+          },
+          "durataMinuti": 300
         },
         {
           "id": "x-lucidatura",
@@ -192,7 +226,9 @@
             "m": 300,
             "s": 250,
             "xl": 400
-          }
+          },
+          "durataGiorni": 1,
+          "durataMinuti": 0
         }
       ],
       "attivo": true,
@@ -212,7 +248,8 @@
           "evidenza": false,
           "descrizione": "Non il classico lavaggio auto, ma un trattamento pensato per prendersi cura della carrozzeria in modo sicuro.\n\nOltre alla pulizia dell’abitacolo prevista dal pacchetto Interno Base, l’esterno viene lavato interamente a mano con la tecnica professionale dei due secchi, che permette di ridurre al minimo il rischio di trascinare sporco e impurità sulla vernice.\n\nA differenza dei lavaggi automatici o di metodi poco accurati, questa procedura aiuta a prevenire la comparsa di micrograffi e swirls, preservando nel tempo la qualità e la brillantezza della carrozzeria.\n\nLa scelta ideale per chi desidera un’auto pulita dentro e fuori, con la giusta attenzione per ogni superficie.",
           "durataGiorni": 1,
-          "durataMinuti": 300
+          "durataMinuti": null,
+          "durataDaValutare": false
         },
         {
           "id": "completo-premium",
@@ -228,9 +265,10 @@
           "titolo": "Interno + Esterno Premium",
           "evidenza": true,
           "descrizione": "Un trattamento completo per chi desidera il massimo della cura, della brillantezza e della protezione.\n\nOltre ai servizi previsti dal pacchetto Interno Premium e al lavaggio esterno eseguito a mano, la carrozzeria e i cerchi vengono sottoposti a un accurato processo di decontaminazione chimica e meccanica, studiato per rimuovere le impurità più tenaci e restituire alle superfici una finitura liscia e pulita.\n\nA completare il trattamento viene applicato un sigillante professionale sulla carrozzeria e sul parabrezza, creando una barriera protettiva contro acqua e agenti atmosferici.\n\nIl risultato? Una brillantezza intensa e profonda, un marcato effetto idrorepellente e superfici protette più a lungo.\n\nLa soluzione ideale per chi vuole regalare alla propria auto un aspetto impeccabile dentro e fuori.",
-          "durataGiorni": 1,
+          "durataGiorni": 2,
           "durataMinuti": null,
-          "giornataIntera": true
+          "giornataIntera": true,
+          "durataDaValutare": false
         }
       ],
       "sottotitolo": "Dentro e fuori, lavaggio a mano"
@@ -257,8 +295,9 @@
           "titolo": "Trattamento Showroom",
           "evidenza": false,
           "descrizione": "Un servizio esclusivo dedicato a chi desidera riportare la propria auto al massimo del suo potenziale estetico, dentro e fuori.\n\nL’abitacolo viene sottoposto a un trattamento completo e approfondito, con pulizia tecnica di ogni dettaglio, estrazione dello sporco dai tessuti e trattamenti specifici per nutrire e proteggere pelle, plastiche e superfici interne.\n\nAll’esterno, dopo un’accurata decontaminazione della carrozzeria, viene eseguita una lucidatura mirata per correggere micrograffi, swirls e opacità, esaltando nuovamente profondità, riflesso e brillantezza della vernice.\n\nIl trattamento si conclude con l’applicazione di una protezione nanotecnologica idrofobica su carrozzeria e parabrezza, studiata per preservare più a lungo il risultato ottenuto e facilitare la manutenzione dell’auto.\n\nIl risultato è una vettura completamente valorizzata, con interni rigenerati e una carrozzeria brillante e profonda, per un autentico effetto showroom.",
-          "durataGiorni": 2,
-          "durataMinuti": null
+          "durataGiorni": 3,
+          "durataMinuti": null,
+          "durataDaValutare": false
         }
       ],
       "sottotitolo": "Il nostro trattamento più completo"
@@ -287,7 +326,8 @@
           "descrizione": "Un servizio riservato a chi vuole mantenere nel tempo il livello di cura, brillantezza e protezione raggiunto con i nostri trattamenti Premium.\n\nIl programma è dedicato esclusivamente ai clienti che hanno già effettuato almeno un servizio Premium e prevede interventi periodici studiati per preservare al meglio le condizioni della vettura.\n\nPer garantire un mantenimento ottimale, consigliamo di programmare ogni intervento entro 30-40 giorni dal trattamento precedente.\n\nDurante ogni appuntamento vengono ripristinati brillantezza e pulizia, ravvivati i protettivi applicati e rimossi i contaminanti prima che possano accumularsi sulle superfici.\n\nUna cura costante che permette di conservare più a lungo l’effetto showroom e avere un’auto sempre impeccabile, protetta e piacevole da vivere.",
           "suRichiesta": true,
           "durataGiorni": 1,
-          "durataMinuti": 300
+          "durataMinuti": null,
+          "durataDaValutare": true
         }
       ],
       "sottotitolo": "Riservato ai clienti Premium"

@@ -438,7 +438,10 @@
         Senza durata, un trattamento conta 2 ore.<br>
         Gli <b>extra</b> (col +) si sommano al trattamento scelto: se lasci
         vuoto non allungano nulla, tranne quando il cliente prenota solo
-        extra, dove contano 30 minuti a testa.</p>
+        extra, dove contano 30 minuti a testa.<br>
+        Se un extra ti tiene l'auto per giornate intere, mettilo in
+        <b>giorni</b>: quelle giornate si aggiungono a quelle del
+        trattamento e l'app fa scegliere solo il giorno, non l'ora.</p>
       <div id="lista-durate" style="margin-top:8px"></div>
     </div>
   </section>
@@ -2221,9 +2224,11 @@ function disegnaDurate(){
         <input type="number" min="1" step="${aGiorni ? 1 : 15}" inputmode="numeric"
           value="${aGiorni ? l.durataGiorni : (l.durataMinuti || '')}"
           placeholder="${aGiorni ? '2' : '120'}"
-          aria-label="Durata di ${esc(l.titolo||l.nome)}" style="min-height:44px"
+          aria-label="Durata di ${esc(l.titolo||l.nome)}"
+          style="min-height:44px;flex:0 0 78px;width:78px;min-width:0"
           ${daVedere ? 'hidden' : ''}>
-        <select aria-label="Come si conta la durata" style="min-height:44px;padding:0 8px;flex:1">
+        <select aria-label="Come si conta la durata"
+                style="min-height:44px;padding:0 8px;flex:1;min-width:0">
           <option value="min"      ${(!aGiorni && !daVedere) ? 'selected' : ''}>min</option>
           <option value="giorni"   ${(aGiorni && !daVedere) ? 'selected' : ''}>giorni</option>
           <option value="valutare" ${daVedere ? 'selected' : ''}>da valutare</option>
@@ -2259,18 +2264,40 @@ function disegnaDurate(){
       r.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)';
       r.innerHTML = `<span style="flex:1;min-width:0;font-size:15px">+ ${esc(x.nome || 'Extra')}
           <small style="display:block;color:var(--text-2);font-size:12px">${esc(p.nome)} · extra</small></span>`;
+      const xGiorni = (x.durataGiorni || 1) > 1;
       const box = document.createElement('div');
       box.style.cssText = 'flex:0 0 200px;display:flex;align-items:center;gap:6px';
       box.innerHTML = `
-        <input type="number" min="0" step="15" inputmode="numeric"
-          value="${x.durataMinuti || ''}" placeholder="30"
-          aria-label="Durata di ${esc(x.nome||'extra')}" style="min-height:44px">
-        <span style="flex:1;color:var(--text-2);font-size:13px">min</span>`;
-      const numero = box.querySelector('input');
-      numero.addEventListener('input', () => {
+        <input type="number" min="${xGiorni ? 1 : 0}" step="${xGiorni ? 1 : 15}" inputmode="numeric"
+          value="${xGiorni ? x.durataGiorni : (x.durataMinuti || '')}"
+          placeholder="${xGiorni ? '2' : '30'}"
+          aria-label="Durata di ${esc(x.nome||'extra')}"
+          style="min-height:44px;flex:0 0 78px;width:78px;min-width:0">
+        <select aria-label="Come si conta la durata di ${esc(x.nome||'extra')}"
+                style="min-height:44px;padding:0 8px;flex:1;min-width:0">
+          <option value="min"    ${xGiorni ? '' : 'selected'}>min</option>
+          <option value="giorni" ${xGiorni ? 'selected' : ''}>giorni</option>
+        </select>`;
+      const numero = box.querySelector('input'), unita = box.querySelector('select');
+      const applica = () => {
         const v = numero.value === "" ? 0 : Number(numero.value);
-        x.durataMinuti = v > 0 ? v : 0;
+        // A giornate l'extra non si misura piu' in minuti: tiene l'auto per
+        // giornate intere, che si sommano a quelle del trattamento.
+        if(unita.value === 'giorni'){
+          x.durataGiorni = v > 1 ? v : 1;
+          x.durataMinuti = 0;
+        }else{
+          x.durataGiorni = 1;
+          x.durataMinuti = v > 0 ? v : 0;
+        }
         segnaModificato();
+      };
+      numero.addEventListener('input', applica);
+      unita.addEventListener('change', () => {
+        numero.step = unita.value === 'giorni' ? 1 : 15;
+        numero.min  = unita.value === 'giorni' ? 1 : 0;
+        numero.placeholder = unita.value === 'giorni' ? '2' : '30';
+        applica();
       });
       r.appendChild(box);
       c.appendChild(r);
@@ -2418,7 +2445,7 @@ function nRiempiExtra(){
     const i = document.createElement('input');
     i.type = 'checkbox'; i.value = x.id;
     i.checked = scelti.includes(x.id);
-    i.addEventListener('change', nAggiornaTotale);
+    i.addEventListener('change', () => { nAggiornaTotale(); nAggiornaOrari(); });
     const binario = document.createElement('span');
     binario.className = 'binario'; binario.setAttribute('aria-hidden', 'true');
     l.appendChild(i); l.appendChild(binario); c.appendChild(l);
@@ -2569,7 +2596,8 @@ async function nAggiornaOrari(){
   if(!iso || !p || !l) return;
 
   const data = new Date(iso + 'T00:00:00');
-  const giorni = ROPE.giorniDi(p.id, l.id);
+  // le giornate del trattamento piu' quelle di un eventuale extra a giornate
+  const giorni = ROPE.giorniDi(p.id, l.id) + ROPE.giorniExtra(nSelezione());
 
   if(giorni > 1){
     $("#n-ora-box").hidden = true;
@@ -2757,7 +2785,7 @@ async function nSalva(){
   if(!iso) return nErrore("Scegli il giorno.");
 
   const data = new Date(iso + 'T00:00:00');
-  const giorni = ROPE.giorniDi(p.id, l.id);
+  const giorni = ROPE.giorniDi(p.id, l.id) + ROPE.giorniExtra(nSelezione());
 
   let ora, occupato = false;
   if(giorni > 1) ora = nOraApertura(data);
@@ -2799,7 +2827,7 @@ async function nSalva(){
         data_app: iso,
         ora: ora,
         durata_minuti: ROPE.durataPerGiorno(p.id, l.id, data),
-        giorni: Math.max(1, Number($("#n-giorni").value) || giorni),
+        giorni: Math.max(1, Number($("#n-giorni").value) || 1, giorni),
         auto: {marca: $("#n-marca").value.trim(),
                modello: $("#n-modello").value.trim(),
                targa: $("#n-targa").value.trim().toUpperCase()},

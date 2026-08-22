@@ -497,6 +497,8 @@ window.ROPE = (function(){
     if(soloExtra(s)){
       const minuti = (s.extra || []).reduce((somma, e) => {
         const x = trovaExtra(e.pacchettoId || s.pacchettoId, e.id);
+        // gli extra a giornate non si contano in minuti: valgono giorni interi
+        if(x && (x.durataGiorni || 1) > 1) return somma;
         return somma + ((x && x.durataMinuti) || DURATA_EXTRA);
       }, 0);
       return Math.max(minuti, DURATA_EXTRA);
@@ -504,8 +506,19 @@ window.ROPE = (function(){
     return durataPerGiorno(s.pacchettoId, s.livelloId, data || new Date());
   }
 
+  /* Anche un extra può tenere l'auto per giornate intere (lo imposti dal
+     pannello, negli Orari): quelle giornate si aggiungono a quelle del
+     trattamento scelto. */
+  function giorniExtra(s){
+    return (s.extra || []).reduce((somma, e) => {
+      const x = trovaExtra(e.pacchettoId || s.pacchettoId, e.id);
+      return somma + Math.max(0, ((x && x.durataGiorni) || 1) - 1);
+    }, 0);
+  }
+
   function giorniDellaSelezione(s){
-    return soloExtra(s) ? 1 : giorniDi(s.pacchettoId, s.livelloId);
+    const base = soloExtra(s) ? 1 : giorniDi(s.pacchettoId, s.livelloId);
+    return base + giorniExtra(s);
   }
 
   /* Come si chiama il lavoro, per il riepilogo e per il pannello. */
@@ -912,6 +925,6 @@ window.ROPE = (function(){
           giornoChiuso, slotLiberi, giorniLiberi, durataDi, giorniDi, dataISO,
           durataPerGiorno, minutiLavorabili, soloExtra, extraDelListino,
           alRitorno, tieniAggiornato, prossimoAppuntamento, daValutare,
-          durataDellaSelezione, giorniDellaSelezione, nomeDellaSelezione,
+          durataDellaSelezione, giorniDellaSelezione, giorniExtra, nomeDellaSelezione,
           get dati(){ return dati; }};
 })();
