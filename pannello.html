@@ -2625,8 +2625,9 @@ async function nAggiornaOrari(){
   if(!iso || !p || !l) return;
 
   const data = new Date(iso + 'T00:00:00');
-  // le giornate del trattamento piu' quelle di un eventuale extra a giornate
-  const giorni = ROPE.giorniDi(p.id, l.id) + ROPE.giorniExtra(nSelezione());
+  // giornate del trattamento, degli extra a giornate, e di un lavoro
+  // troppo lungo per stare in una giornata sola
+  const giorni = ROPE.giorniDellaSelezione(nSelezione(), data);
 
   if(giorni > 1){
     $("#n-ora-box").hidden = true;
@@ -2814,7 +2815,7 @@ async function nSalva(){
   if(!iso) return nErrore("Scegli il giorno.");
 
   const data = new Date(iso + 'T00:00:00');
-  const giorni = ROPE.giorniDi(p.id, l.id) + ROPE.giorniExtra(nSelezione());
+  const giorni = ROPE.giorniDellaSelezione(nSelezione(), data);
 
   let ora, occupato = false;
   if(giorni > 1) ora = nOraApertura(data);

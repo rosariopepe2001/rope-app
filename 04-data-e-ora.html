@@ -183,16 +183,21 @@ async function disegnaOrari(){
     return;
   }
 
-  /* servizi che occupano più giornate intere: niente orari, solo il giorno */
+  /* servizi che occupano più giornate intere: niente orari, solo il giorno.
+     Le giornate si ricontano sul giorno scelto: un lavoro lungo puo'
+     occuparne di piu' se quel giorno si apre di meno. */
+  giorni = ROPE.giorniDellaSelezione(sel, scelta);
+  if(giorni > 1) $("#titolo-orari").textContent = 'Giorno di inizio';
   if(giorni > 1){
     c.innerHTML = '<p class="niente">Controllo…</p>';
     const ok = await ROPE.giorniLiberi(scelta, giorni);
     if(ok){
       ora = 'giornata';
-      c.innerHTML = `<p class="niente">Questo trattamento occupa
+      const fine = new Date(scelta); fine.setDate(fine.getDate() + giorni - 1);
+      c.innerHTML = `<p class="niente">Questo lavoro occupa
         <b style="color:var(--text)">${giorni} giornate intere</b>.<br>
         Iniziamo il ${scelta.getDate()} ${MESI[scelta.getMonth()]}, l'auto resta in officina
-        fino alla sera del giorno dopo.</p>`;
+        fino alla sera del ${fine.getDate()} ${MESI[fine.getMonth()]}.</p>`;
     }else{
       ora = null;
       c.innerHTML = '<p class="niente">Non ci sono ' + giorni +

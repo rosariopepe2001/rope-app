@@ -532,9 +532,22 @@ window.ROPE = (function(){
     }, 0);
   }
 
-  function giorniDellaSelezione(s){
+  function giorniDellaSelezione(s, data){
+    const quando = data || new Date();
     const base = soloExtra(s) ? 1 : giorniDi(s.pacchettoId, s.livelloId);
-    return base + giorniExtra(s);
+    let giorni = base + giorniExtra(s);
+    /* Un lavoro che non entra in una giornata prima non si poteva
+       prenotare proprio: l'app non trovava nessun orario e il cliente
+       restava fermo li'. Adesso si prende le giornate che gli servono,
+       come i lavori gia' segnati "a giornate". */
+    if(giorni === 1){
+      // se il giorno non e' ancora scelto (o e' di chiusura) si ragiona
+      // sulla giornata di apertura piu' lunga della settimana
+      const giornata = minutiLavorabili(quando) || giornataPiuLunga();
+      const minuti = durataDellaSelezione(s, quando);
+      if(giornata > 0 && minuti > giornata) giorni = Math.ceil(minuti / giornata);
+    }
+    return giorni;
   }
 
   /* Come si chiama il lavoro, per il riepilogo e per il pannello. */
@@ -553,6 +566,16 @@ window.ROPE = (function(){
   function durataDi(pacchettoId, livelloId){
     const t = trovaLivello(pacchettoId, livelloId);
     return (t && t.livello.durataMinuti) || 120;
+  }
+
+  /* Quanto si lavora nel giorno di apertura piu' lungo, tolta la pausa. */
+  function giornataPiuLunga(){
+    const disp = dati.disponibilita || {};
+    const pausa = disp.pausa && disp.pausa.attiva
+      ? inMinuti(disp.pausa.a) - inMinuti(disp.pausa.da) : 0;
+    return Object.values(disp.giorni || {})
+      .filter(g => g && g.aperto)
+      .reduce((piu, g) => Math.max(piu, inMinuti(g.a) - inMinuti(g.da) - pausa), 0);
   }
 
   /* Quanto lavoro ci sta in una giornata, tolta la pausa.
