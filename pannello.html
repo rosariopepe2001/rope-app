@@ -2040,14 +2040,43 @@ function mostraAnteprima(sel, percorso){
   if(percorso){ img.src = percorso; img.hidden = false; }
   else { img.removeAttribute('src'); img.hidden = true; }
 }
+
+/* Una foto appena scattata con l'iPhone pesa 6-7 MB. Mandata su cosi'
+   com'e', sull'app doveva scaricarsi tutta ogni volta: con la rete lenta a
+   volte non ce la faceva e al posto della foto restava il riquadro vuoto.
+   Qui la rimpiccioliamo prima di mandarla: 2000 px sul lato lungo bastano
+   e avanzano per il telefono (anche ingrandendo col dito) e il peso scende
+   di venti volte. L'originale sul Mac non si tocca. */
+const FOTO_LATO_MAX = 2000, FOTO_QUALITA = 0.85;
+
+async function rimpicciolisci(file){
+  if(!/^image\//.test(file.type || "")) return null;
+  // se il browser non sa aprirla (certi HEIC), si manda com'era
+  const bitmap = await createImageBitmap(file, {imageOrientation: 'from-image'})
+                        .catch(() => null);
+  if(!bitmap) return null;
+  const scala = Math.min(1, FOTO_LATO_MAX / Math.max(bitmap.width, bitmap.height));
+  // gia' piccola e leggera: si lascia com'e'
+  if(scala === 1 && file.size <= 900 * 1024){ bitmap.close(); return null; }
+  const tela = document.createElement('canvas');
+  tela.width  = Math.max(1, Math.round(bitmap.width  * scala));
+  tela.height = Math.max(1, Math.round(bitmap.height * scala));
+  tela.getContext('2d').drawImage(bitmap, 0, 0, tela.width, tela.height);
+  bitmap.close();
+  return tela.toDataURL('image/jpeg', FOTO_QUALITA);
+}
+
 async function inviaFoto(file){
-  const base64 = await new Promise((ok, ko) => {
+  let nome = file.name;
+  let base64 = await rimpicciolisci(file);
+  if(base64) nome = nome.replace(/\.[^.]*$/, '') + '.jpg';   // ora e' un jpeg
+  else base64 = await new Promise((ok, ko) => {
     const fr = new FileReader();
     fr.onload = () => ok(fr.result); fr.onerror = ko; fr.readAsDataURL(file);
   });
   const r = await fetch('/api/foto', {method:'POST',
     headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({nome:file.name, dati:base64})});
+    body: JSON.stringify({nome:nome, dati:base64})});
   const out = await r.json();
   if(!r.ok || out.errore) throw new Error(out.errore || 'errore');
   return out.percorso;
