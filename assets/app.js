@@ -256,7 +256,9 @@ window.ROPE = (function(){
       ora: s.ora || null,
       durata_minuti: durataDellaSelezione(s,
                        s.dataISO ? new Date(s.dataISO + 'T00:00:00') : new Date()),
-      giorni: giorniDellaSelezione(s),
+      // giornate dichiarate, oppure quelle che il lavoro si prende
+      // sconfinando dal giorno scelto
+      giorni: giorniPrenotazione(s),
       auto: s.auto || {},
       note: s.note || null,
       pagamento: s.pagamento || null
@@ -341,8 +343,133 @@ window.ROPE = (function(){
     return fine;
   }
 
+  /* La pausa pranzo, in minuti dalla mezzanotte. */
+  function pausaDi(){
+    const disp = dati.disponibilita || {};
+    return disp.pausa && disp.pausa.attiva
+      ? {da: inMinuti(disp.pausa.da), a: inMinuti(disp.pausa.a)} : null;
+  }
+
+  /* Quanto lavoro ci sta in un giorno a partire da un certo minuto.
+     La pausa non conta come lavoro. */
+  function capacitaDa(data, da){
+    const g = giornoConfig(data);
+    if(!g || !g.aperto || giornoChiuso(data)) return 0;
+    const apre = inMinuti(g.da), chiude = inMinuti(g.a);
+    const inizio = Math.max(da == null ? apre : da, apre);
+    if(inizio >= chiude) return 0;
+    const p = pausaDi();
+    let minuti = chiude - inizio;
+    if(p) minuti -= Math.max(0, Math.min(chiude, p.a) - Math.max(inizio, p.da));
+    return Math.max(0, minuti);
+  }
+
+  /* Da che ora a che ora un lavoro tiene occupata l'officina nel giorno
+     chiesto. Un lavoro lungo comincia un giorno e finisce in quelli dopo:
+     il primo giorno prende dalla sua ora alla chiusura, quelli in mezzo
+     interi, l'ultimo solo il tempo che resta — così il resto di
+     quell'ultimo giorno si può ancora prenotare. */
+  function fasciaOccupata(o, giorno){
+    const conf = giornoConfig(giorno);
+    if(!conf || !conf.aperto) return null;
+    const apre = inMinuti(conf.da), chiude = inMinuti(conf.a), p = pausaDi();
+    const durata = o.durata_minuti || 120;
+    const fascia = (da, minuti) => ({da, a: Math.min(fineReale(da, minuti, p), chiude)});
+
+    /* Se il database è ancora quello vecchio non dice quando comincia il
+       lavoro: nel dubbio si tiene occupata tutta la giornata, come prima. */
+    if(!o.data_app) return o.giorno_pieno ? {da: apre, a: chiude}
+                                          : fascia(inMinuti(o.ora), durata);
+
+    const cercato = dataISO(giorno);
+    const passo = new Date(o.data_app + 'T00:00:00');
+    let restano = durata;
+    for(let i = 0; i < 60 && restano > 0; i++){
+      const iso = dataISO(passo);
+      const c = giornoConfig(passo);
+      if(c && c.aperto && !giornoChiuso(passo)){
+        const inizio = i === 0 ? Math.max(inMinuti(c.da), inMinuti(o.ora || c.da))
+                               : inMinuti(c.da);
+        const usati = Math.min(restano, capacitaDa(passo, inizio));
+        if(iso === cercato) return usati > 0 ? fascia(inizio, usati) : null;
+        restano -= usati;
+      }else if(iso === cercato) return null;   // quel giorno è chiuso
+      if(iso === cercato) return null;
+      passo.setDate(passo.getDate() + 1);
+    }
+    return null;
+  }
+
+  /* Le fasce già occupate in un giorno. La memoria serve a non richiedere
+     lo stesso giorno venti volte mentre si costruiscono gli orari. */
+  async function occupatiDi(giorno, memoria){
+    const iso = dataISO(giorno);
+    if(memoria && memoria.has(iso)) return memoria.get(iso);
+    const righe = await orariOccupati(giorno);
+    const fasce = righe.map(o => fasciaOccupata(o, giorno)).filter(Boolean);
+    if(memoria) memoria.set(iso, fasce);
+    return fasce;
+  }
+
+  /* Il seguito di un lavoro che sconfina: i giorni dopo devono essere
+     liberi per il tempo che resta. I giorni di chiusura si saltano. */
+  async function codaLibera(data, restano, memoria){
+    const g = new Date(data);
+    for(let i = 0; i < 30 && restano > 0; i++){
+      g.setDate(g.getDate() + 1);
+      if(giornoChiuso(g)) continue;
+      const conf = giornoConfig(g);
+      const apre = inMinuti(conf.da);
+      const disponibili = capacitaDa(g, apre);
+      if(disponibili <= 0) continue;
+      const usati = Math.min(restano, disponibili);
+      const fine = fineReale(apre, usati, pausaDi());
+      const occupati = await occupatiDi(g, memoria);
+      if(occupati.some(o => apre < o.a && fine > o.da)) return false;
+      restano -= usati;
+    }
+    return restano <= 0;
+  }
+
+  /* Quante giornate di calendario tiene l'auto un lavoro che comincia in
+     quel giorno a quell'ora (1 = comincia e finisce in giornata). */
+  function giorniDaOccupare(data, ora, durata){
+    let restano = (durata || 0) - capacitaDa(data, inMinuti(ora));
+    if(restano <= 0) return 1;
+    const g = new Date(data);
+    let giorni = 1;
+    for(let i = 0; i < 60 && restano > 0; i++){
+      g.setDate(g.getDate() + 1);
+      giorni++;
+      if(giornoChiuso(g)) continue;
+      restano -= capacitaDa(g, null);
+    }
+    return giorni;
+  }
+
+  /* A che ora finisce davvero, e in che giorno. */
+  function fineLavoro(data, ora, durata){
+    const giorni = giorniDaOccupare(data, ora, durata);
+    let restano = durata - capacitaDa(data, inMinuti(ora));
+    if(restano <= 0) return {giorni: 1, giorno: new Date(data),
+                             ora: inOra(fineReale(inMinuti(ora), durata, pausaDi()))};
+    const g = new Date(data);
+    for(let i = 0; i < 60; i++){
+      g.setDate(g.getDate() + 1);
+      if(giornoChiuso(g)) continue;
+      const apre = inMinuti(giornoConfig(g).da);
+      const disponibili = capacitaDa(g, apre);
+      if(restano <= disponibili)
+        return {giorni, giorno: new Date(g), ora: inOra(fineReale(apre, restano, pausaDi()))};
+      restano -= disponibili;
+    }
+    return {giorni, giorno: new Date(g), ora: null};
+  }
+
   /* Costruisce gli orari proponibili per un giorno, tolti pausa,
-     preavviso minimo e appuntamenti già presi. */
+     preavviso minimo e appuntamenti già presi.
+     Un lavoro più lungo di una giornata intera non viene scartato: prende
+     il resto della giornata e continua nei giorni dopo. */
   /* opzioni.ignoraPreavviso: usato dal pannello di gestione, che deve poter
      prenotare un cliente anche per fra un'ora. */
   async function slotLiberi(data, durataMinuti, opzioni){
@@ -353,17 +480,13 @@ window.ROPE = (function(){
     const passo = disp.passo || 30;
     const durata = durataMinuti || 120;
     const apre = inMinuti(g.da), chiude = inMinuti(g.a);
+    const pausa = pausaDi();
 
-    const pausa = disp.pausa && disp.pausa.attiva
-      ? {da: inMinuti(disp.pausa.da), a: inMinuti(disp.pausa.a)} : null;
+    const memoria = new Map();
+    const occupati = await occupatiDi(data, memoria);
 
-    const righe = await orariOccupati(data);
-    if(righe.some(o => o.giorno_pieno)) return [];   // giornata già impegnata tutta
-
-    const occupati = righe.map(o => {
-      const da = inMinuti(o.ora);
-      return {da, a: fineReale(da, o.durata_minuti || 120, pausa)};
-    });
+    // un lavoro che non entrerebbe in nessuna giornata sconfina in quelle dopo
+    const sconfina = durata > capacitaDa(data, apre);
 
     const adesso = new Date();
     const minimo = (opzioni && opzioni.ignoraPreavviso)
@@ -372,15 +495,25 @@ window.ROPE = (function(){
 
     const slot = [];
     for(let m = apre; m <= chiude; m += passo){
-      const fine = fineReale(m, durata, pausa);
-      if(fine > chiude) break;                       // non si finirebbe in giornata
+      const oggi = capacitaDa(data, m);
+      if(!sconfina && durata > oggi) break;           // non si finirebbe in giornata
+      if(oggi <= 0) break;
 
       const quando = new Date(data); quando.setHours(0, m, 0, 0);
 
       let libero = quando >= minimo;
       // non si può iniziare durante la pausa, ma la si può attraversare
       if(libero && pausa && m >= pausa.da && m < pausa.a) libero = false;
-      if(libero) libero = !occupati.some(o => m < o.a && fine > o.da);
+      if(libero){
+        if(durata <= oggi){
+          const fine = fineReale(m, durata, pausa);
+          libero = !occupati.some(o => m < o.a && fine > o.da);
+        }else{
+          // oggi si lavora fino a chiusura, il resto va nei giorni dopo
+          libero = !occupati.some(o => m < o.a && chiude > o.da)
+                && await codaLibera(data, durata - oggi, memoria);
+        }
+      }
 
       slot.push({ora: inOra(m), libero});
     }
@@ -532,22 +665,23 @@ window.ROPE = (function(){
     }, 0);
   }
 
-  function giorniDellaSelezione(s, data){
-    const quando = data || new Date();
+  /* Le giornate che la prenotazione tiene bloccate: quelle dichiarate a
+     listino, o quelle che servono a un lavoro lungo per finire. */
+  function giorniPrenotazione(s){
+    const data = s.dataISO ? new Date(s.dataISO + 'T00:00:00') : new Date();
+    const dichiarate = giorniDellaSelezione(s);
+    if(dichiarate > 1) return dichiarate;
+    const conf = giornoConfig(data) || {};
+    return giorniDaOccupare(data, s.ora || conf.da || '08:30',
+                            durataDellaSelezione(s, data));
+  }
+
+  /* Le giornate intere dichiarate nel pannello (servizio "a giorni" o
+     extra "a giorni"). I lavori solo lunghi non finiscono qui: quelli
+     scelgono un'ora e sconfinano nei giorni dopo, vedi slotLiberi. */
+  function giorniDellaSelezione(s){
     const base = soloExtra(s) ? 1 : giorniDi(s.pacchettoId, s.livelloId);
-    let giorni = base + giorniExtra(s);
-    /* Un lavoro che non entra in una giornata prima non si poteva
-       prenotare proprio: l'app non trovava nessun orario e il cliente
-       restava fermo li'. Adesso si prende le giornate che gli servono,
-       come i lavori gia' segnati "a giornate". */
-    if(giorni === 1){
-      // se il giorno non e' ancora scelto (o e' di chiusura) si ragiona
-      // sulla giornata di apertura piu' lunga della settimana
-      const giornata = minutiLavorabili(quando) || giornataPiuLunga();
-      const minuti = durataDellaSelezione(s, quando);
-      if(giornata > 0 && minuti > giornata) giorni = Math.ceil(minuti / giornata);
-    }
-    return giorni;
+    return base + giorniExtra(s);
   }
 
   /* Come si chiama il lavoro, per il riepilogo e per il pannello. */
@@ -566,16 +700,6 @@ window.ROPE = (function(){
   function durataDi(pacchettoId, livelloId){
     const t = trovaLivello(pacchettoId, livelloId);
     return (t && t.livello.durataMinuti) || 120;
-  }
-
-  /* Quanto si lavora nel giorno di apertura piu' lungo, tolta la pausa. */
-  function giornataPiuLunga(){
-    const disp = dati.disponibilita || {};
-    const pausa = disp.pausa && disp.pausa.attiva
-      ? inMinuti(disp.pausa.a) - inMinuti(disp.pausa.da) : 0;
-    return Object.values(disp.giorni || {})
-      .filter(g => g && g.aperto)
-      .reduce((piu, g) => Math.max(piu, inMinuti(g.a) - inMinuti(g.da) - pausa), 0);
   }
 
   /* Quanto lavoro ci sta in una giornata, tolta la pausa.
@@ -965,6 +1089,8 @@ window.ROPE = (function(){
           durataPerGiorno, minutiLavorabili, soloExtra, extraDelListino,
           alRitorno, tieniAggiornato, prossimoAppuntamento, daValutare,
           durataDellaSelezione, giorniDellaSelezione, giorniExtra, minutiExtra,
+          giorniPrenotazione, giorniDaOccupare, fineLavoro, capacitaDa,
+          fasciaOccupata,
           nomeDellaSelezione,
           get dati(){ return dati; }};
 })();

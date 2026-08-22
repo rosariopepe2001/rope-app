@@ -186,7 +186,7 @@ async function disegnaOrari(){
   /* servizi che occupano più giornate intere: niente orari, solo il giorno.
      Le giornate si ricontano sul giorno scelto: un lavoro lungo puo'
      occuparne di piu' se quel giorno si apre di meno. */
-  giorni = ROPE.giorniDellaSelezione(sel, scelta);
+  giorni = ROPE.giorniDellaSelezione(sel);
   if(giorni > 1) $("#titolo-orari").textContent = 'Giorno di inizio';
   if(giorni > 1){
     c.innerHTML = '<p class="niente">Controllo…</p>';
@@ -248,15 +248,17 @@ function controlla(){
     return;
   }
 
-  const [h,m] = ora.split(':').map(Number);
-  const fine = new Date(scelta); fine.setHours(h, m + durata, 0, 0);
-  const orario = String(fine.getHours()).padStart(2,'0') + ':' +
-                 String(fine.getMinutes()).padStart(2,'0');
+  /* Un lavoro lungo comincia oggi e finisce nei giorni dopo: qui si dice
+     al cliente quando riprende l'auto, senza sorprese. */
+  const f = ROPE.fineLavoro(scelta, ora, durata);
+  const quanto = `circa ${Math.floor(durata/60)}h${durata % 60 ? String(durata % 60) : ''}`;
 
   $("#riconsegna").hidden = false;
-  $("#riconsegna").textContent =
-    `${scelta.getDate()} ${MESI[scelta.getMonth()]} dalle ${ora} alle ${orario} ` +
-    `(circa ${Math.floor(durata/60)}h${durata % 60 ? String(durata % 60) : ''})`;
+  $("#riconsegna").textContent = f.giorni > 1
+    ? `Lasci l'auto il ${scelta.getDate()} ${MESI[scelta.getMonth()]} alle ${ora}, ` +
+      `la riprendi il ${f.giorno.getDate()} ${MESI[f.giorno.getMonth()]} ` +
+      `dalle ${f.ora} (${quanto} di lavoro)`
+    : `${scelta.getDate()} ${MESI[scelta.getMonth()]} dalle ${ora} alle ${f.ora} (${quanto})`;
 }
 
 $("#prec").addEventListener('click', () => {
@@ -271,7 +273,8 @@ $("#avanti").addEventListener('click', () => {
     data: `${scelta.getDate()} ${MESI[scelta.getMonth()]} ${scelta.getFullYear()}`,
     dataISO: ROPE.dataISO(scelta),
     ora: giorni > 1 ? (g?.da || '08:30') : ora,
-    giorni
+    // giornate dichiarate, oppure quelle che si prende un lavoro lungo
+    giorni: giorni > 1 ? giorni : ROPE.giorniDaOccupare(scelta, ora, durata)
   });
   location.href = '05-la-tua-auto.html';
 });

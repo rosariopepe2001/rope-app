@@ -903,15 +903,30 @@ function disegnaAgenda(){
   const pausa = (disp.pausa && disp.pausa.attiva)
     ? {da: agMin(disp.pausa.da), a: agMin(disp.pausa.a)} : null;
 
-  /* Un lavoro senza ora, o di più giornate, si prende tutta la giornata. */
+  /* Un lavoro senza ora, o segnato a giornate intere, si prende tutta la
+     giornata. Un lavoro solo lungo invece no: il primo giorno occupa fino
+     a chiusura e l'ultimo solo il tempo che gli resta, così vedi subito
+     quando torni libero. */
+  const giornata = ROPE.capacitaDa(data, null);
   const blocchi = [];
   let tuttoIlGiorno = null;
   lavori.forEach(v => {
     const quanti = Math.max(v.giorni_lavorazione || 0, v.giorni || 1, 1);
-    if(!v.ora || quanti > 1){ tuttoIlGiorno = v; return; }
-    const da = agMin(v.ora);
-    let a = da + (v.durata_minuti || 120);
-    if(pausa && da < pausa.a && a > pausa.da) a += (pausa.a - pausa.da);
+    const durata = v.durata_minuti || 120;
+    const sconfina = durata > giornata;
+    if(!v.ora || (quanti > 1 && !sconfina)){ tuttoIlGiorno = v; return; }
+    const f = sconfina
+      ? ROPE.fasciaOccupata({ora: v.ora, durata_minuti: durata,
+                             data_app: v.data_app, giorni: quanti}, data)
+      : null;
+    if(sconfina && !f) return;                       // quel giorno non lo tocca
+    let da, a;
+    if(f){ da = f.da; a = f.a; }
+    else {
+      da = agMin(v.ora); a = da + durata;
+      if(pausa && da < pausa.a && a > pausa.da) a += (pausa.a - pausa.da);
+    }
+    if(da <= apre && a >= chiude){ tuttoIlGiorno = v; return; }
     blocchi.push({da, a: Math.min(a, chiude), v});
   });
   blocchi.sort((x, y) => x.da - y.da);
@@ -2625,9 +2640,8 @@ async function nAggiornaOrari(){
   if(!iso || !p || !l) return;
 
   const data = new Date(iso + 'T00:00:00');
-  // giornate del trattamento, degli extra a giornate, e di un lavoro
-  // troppo lungo per stare in una giornata sola
-  const giorni = ROPE.giorniDellaSelezione(nSelezione(), data);
+  // giornate dichiarate a listino (servizio o extra "a giorni")
+  const giorni = ROPE.giorniDellaSelezione(nSelezione());
 
   if(giorni > 1){
     $("#n-ora-box").hidden = true;
@@ -2815,7 +2829,7 @@ async function nSalva(){
   if(!iso) return nErrore("Scegli il giorno.");
 
   const data = new Date(iso + 'T00:00:00');
-  const giorni = ROPE.giorniDellaSelezione(nSelezione(), data);
+  const giorni = ROPE.giorniDellaSelezione(nSelezione());
 
   let ora, occupato = false;
   if(giorni > 1) ora = nOraApertura(data);
@@ -2857,7 +2871,8 @@ async function nSalva(){
         data_app: iso,
         ora: ora,
         durata_minuti: ROPE.durataDellaSelezione(sel, data),
-        giorni: Math.max(1, Number($("#n-giorni").value) || 1, giorni),
+        giorni: Math.max(1, Number($("#n-giorni").value) || 1, giorni,
+                         ROPE.giorniDaOccupare(data, ora, ROPE.durataDellaSelezione(sel, data))),
         auto: {marca: $("#n-marca").value.trim(),
                modello: $("#n-modello").value.trim(),
                targa: $("#n-targa").value.trim().toUpperCase()},
