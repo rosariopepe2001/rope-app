@@ -234,8 +234,8 @@ window.ROPE_ACCESSO = (function(){
       if(!t) return scaduta();
       const r = await fetchVero(BASE + "/storage/v1/object/foto/" + encodeURIComponent(nome), {
         method: "POST",
-        // senza cache-control Supabase risponde "no-cache" e l'app si
-        // riscarica la foto da capo tutte le volte che la guardi
+        // senza cache-control Supabase tiene la foto in memoria solo
+        // un'ora: cosi' invece l'app se la riscarica una volta sola
         headers: {"apikey": PUB, "Authorization": "Bearer " + t,
                   "Content-Type": tipo, "x-upsert": "true",
                   "cache-control": "public, max-age=31536000"},
