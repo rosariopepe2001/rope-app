@@ -503,7 +503,23 @@ window.ROPE = (function(){
       }, 0);
       return Math.max(minuti, DURATA_EXTRA);
     }
-    return durataPerGiorno(s.pacchettoId, s.livelloId, data || new Date());
+    const base = durataPerGiorno(s.pacchettoId, s.livelloId, data || new Date());
+    // un lavoro che prende tutta la giornata non si allunga oltre la giornata
+    const t = trovaLivello(s.pacchettoId, s.livelloId);
+    if(t && t.livello.giornataIntera) return base;
+    return base + minutiExtra(s);
+  }
+
+  /* Gli extra allungano il lavoro. Senza questo conto l'app teneva
+     occupato solo il tempo del trattamento e proponeva al cliente dopo
+     un orario che in realta' era gia' preso. Un extra senza durata non
+     allunga niente; quelli a giornate contano come giorni, non minuti. */
+  function minutiExtra(s){
+    return (s.extra || []).reduce((somma, e) => {
+      const x = trovaExtra(e.pacchettoId || s.pacchettoId, e.id);
+      if(!x || (x.durataGiorni || 1) > 1) return somma;
+      return somma + Math.max(0, x.durataMinuti || 0);
+    }, 0);
   }
 
   /* Anche un extra può tenere l'auto per giornate intere (lo imposti dal
@@ -925,6 +941,7 @@ window.ROPE = (function(){
           giornoChiuso, slotLiberi, giorniLiberi, durataDi, giorniDi, dataISO,
           durataPerGiorno, minutiLavorabili, soloExtra, extraDelListino,
           alRitorno, tieniAggiornato, prossimoAppuntamento, daValutare,
-          durataDellaSelezione, giorniDellaSelezione, giorniExtra, nomeDellaSelezione,
+          durataDellaSelezione, giorniDellaSelezione, giorniExtra, minutiExtra,
+          nomeDellaSelezione,
           get dati(){ return dati; }};
 })();

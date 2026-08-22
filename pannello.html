@@ -2639,7 +2639,7 @@ async function nAggiornaOrari(){
   sel.innerHTML = '<option>Guardo gli orari…</option>';
   let slot = [];
   try{
-    slot = await ROPE.slotLiberi(data, ROPE.durataPerGiorno(p.id, l.id, data),
+    slot = await ROPE.slotLiberi(data, ROPE.durataDellaSelezione(nSelezione(), data),
                                  {ignoraPreavviso: true});
   }catch(e){ /* si passa all'ora scritta a mano */ }
 
@@ -2855,7 +2855,7 @@ async function nSalva(){
         totale: $("#n-totale").value.trim() || ROPE.totale(sel).testo,
         data_app: iso,
         ora: ora,
-        durata_minuti: ROPE.durataPerGiorno(p.id, l.id, data),
+        durata_minuti: ROPE.durataDellaSelezione(sel, data),
         giorni: Math.max(1, Number($("#n-giorni").value) || 1, giorni),
         auto: {marca: $("#n-marca").value.trim(),
                modello: $("#n-modello").value.trim(),
